@@ -75,3 +75,15 @@ test:
 kubernetes:
   context: kind-microservices-demo
   namespace: default
+
+# Observability configuration
+observability:
+  jaeger:
+    host: localhost
+    port: 16686
+    # Full URL will be constructed as http://{host}:{port}
+
+  otel_collector:
+    host: localhost
+    port: 4317
+    # OpenTelemetry Collector gRPC endpoint for trace export

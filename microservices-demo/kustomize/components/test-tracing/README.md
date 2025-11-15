@@ -19,6 +19,7 @@ This component enables distributed tracing on the microservices-demo application
 2. **Enables Tracing on All Services** (via strategic merge patches):
    - Adds `ENABLE_TRACING=1` environment variable
    - Adds `COLLECTOR_SERVICE_ADDR=opentelemetrycollector:4317` environment variable
+   - Adds `OTEL_SERVICE_NAME=<service-name>` environment variable (ensures proper service identification in Jaeger)
    - Applied to: frontend, checkoutservice, productcatalogservice, currencyservice, paymentservice, emailservice, recommendationservice, shippingservice, cartservice, adservice
 
 3. **Fixes Node.js Service Compatibility**:
@@ -85,6 +86,7 @@ cd /path/to/project
 │  Microservices      │
 │  (OTLP gRPC)        │  ENABLE_TRACING=1
 └──────────┬──────────┘  COLLECTOR_SERVICE_ADDR=opentelemetrycollector:4317
+            │            OTEL_SERVICE_NAME=<service-name>
            │ port 4317
            ▼
 ┌─────────────────────┐

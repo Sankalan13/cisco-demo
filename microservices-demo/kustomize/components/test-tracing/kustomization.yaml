@@ -40,6 +40,8 @@ patches:
               value: "1"
             - name: COLLECTOR_SERVICE_ADDR
               value: "opentelemetrycollector:4317"
+            - name: OTEL_SERVICE_NAME
+              value: "currencyservice"
 
 - patch: |-
     apiVersion: apps/v1
@@ -56,6 +58,8 @@ patches:
               value: "1"
             - name: COLLECTOR_SERVICE_ADDR
               value: "opentelemetrycollector:4317"
+            - name: OTEL_SERVICE_NAME
+              value: "paymentservice"
 
 - patch: |-
     apiVersion: apps/v1
@@ -72,6 +76,8 @@ patches:
               value: "1"
             - name: COLLECTOR_SERVICE_ADDR
               value: "opentelemetrycollector:4317"
+            - name: OTEL_SERVICE_NAME
+              value: "frontend"
 
 - patch: |-
     apiVersion: apps/v1
@@ -88,6 +94,8 @@ patches:
               value: "1"
             - name: COLLECTOR_SERVICE_ADDR
               value: "opentelemetrycollector:4317"
+            - name: OTEL_SERVICE_NAME
+              value: "checkoutservice"
 
 - patch: |-
     apiVersion: apps/v1
@@ -104,6 +112,8 @@ patches:
               value: "1"
             - name: COLLECTOR_SERVICE_ADDR
               value: "opentelemetrycollector:4317"
+            - name: OTEL_SERVICE_NAME
+              value: "productcatalogservice"
 
 - patch: |-
     apiVersion: apps/v1
@@ -120,6 +130,8 @@ patches:
               value: "1"
             - name: COLLECTOR_SERVICE_ADDR
               value: "opentelemetrycollector:4317"
+            - name: OTEL_SERVICE_NAME
+              value: "emailservice"
 
 - patch: |-
     apiVersion: apps/v1
@@ -136,6 +148,8 @@ patches:
               value: "1"
             - name: COLLECTOR_SERVICE_ADDR
               value: "opentelemetrycollector:4317"
+            - name: OTEL_SERVICE_NAME
+              value: "recommendationservice"
 
 - patch: |-
     apiVersion: apps/v1
@@ -152,6 +166,8 @@ patches:
               value: "1"
             - name: COLLECTOR_SERVICE_ADDR
               value: "opentelemetrycollector:4317"
+            - name: OTEL_SERVICE_NAME
+              value: "shippingservice"
 
 - patch: |-
     apiVersion: apps/v1
@@ -168,6 +184,8 @@ patches:
               value: "1"
             - name: COLLECTOR_SERVICE_ADDR
               value: "opentelemetrycollector:4317"
+            - name: OTEL_SERVICE_NAME
+              value: "cartservice"
 
 - patch: |-
     apiVersion: apps/v1
@@ -184,3 +202,5 @@ patches:
               value: "1"
             - name: COLLECTOR_SERVICE_ADDR
               value: "opentelemetrycollector:4317"
+            - name: OTEL_SERVICE_NAME
+              value: "adservice"
