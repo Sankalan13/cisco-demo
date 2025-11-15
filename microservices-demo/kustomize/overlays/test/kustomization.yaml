@@ -1,0 +1,26 @@
+# Test Overlay
+# Kustomize overlay for local Kind cluster testing
+# Combines base microservices with test-specific tracing infrastructure
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Deploy to default namespace
+namespace: default
+
+# Base microservices manifests
+resources:
+- ../../base
+
+# Add test-tracing component (OTel + Jaeger + env vars + image overrides)
+components:
+- ../../components/test-tracing
+
+# Exclude loadgenerator - we control test traffic via BDD tests
+patches:
+- patch: |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: loadgenerator
+    $patch: delete

@@ -38,7 +38,7 @@ if(process.env.ENABLE_TRACING == "1") {
   const { SimpleSpanProcessor } = require('@opentelemetry/sdk-trace-base');
   const { GrpcInstrumentation } = require('@opentelemetry/instrumentation-grpc');
   const { registerInstrumentations } = require('@opentelemetry/instrumentation');
-  const { OTLPTraceExporter } = require("@opentelemetry/exporter-otlp-grpc");
+  const { OTLPTraceExporter } = require("@opentelemetry/exporter-trace-otlp-grpc");
   const { Resource } = require('@opentelemetry/resources');
   const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventions');
 

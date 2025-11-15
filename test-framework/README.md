@@ -688,4 +688,89 @@ For issues or questions:
 
 ---
 
+## Observability and Test Coverage
+
+### Distributed Tracing with OpenTelemetry and Jaeger
+
+The test framework supports distributed tracing to track service interactions and generate coverage reports.
+
+**What You Get:**
+- Visual traces of requests flowing through microservices
+- Identification of which services and gRPC methods were called during tests
+- Performance metrics (latency, timing)
+- Call graphs showing service dependencies
+
+### Quick Start: Enable Tracing
+
+**1. Deploy the observability stack:**
+```bash
+cd deploy_scripts
+./deploy_tracing_stack.sh
+```
+
+This deploys:
+- OpenTelemetry Collector (receives traces from services)
+- Jaeger (stores and visualizes traces)
+- Enables tracing on all microservices
+
+**2. Set up port-forwards (including Jaeger UI):**
+```bash
+cd ..
+./port_forward_services.sh --background
+```
+
+**3. Run tests to generate traces:**
+```bash
+cd test-framework
+behave
+```
+
+**4. View traces in Jaeger UI:**
+```
+http://localhost:16686
+```
+
+### Trace Coverage
+
+**Services with Full Tracing:**
+- ✅ frontend (Go)
+- ✅ checkoutservice (Go)
+- ✅ productcatalogservice (Go)
+- ✅ currencyservice (Node.js)
+- ✅ paymentservice (Node.js)
+- ✅ emailservice (Python)
+- ✅ recommendationservice (Python)
+
+**Services with Limited/No Tracing:**
+- ⚠️ shippingservice (Go - stub only)
+- ❌ cartservice (C# - no instrumentation)
+- ❌ adservice (Java - no instrumentation)
+
+**Note:** Calls TO services without tracing will still appear in traces from calling services.
+
+### Using Jaeger UI
+
+1. **Select a service** from the dropdown (e.g., "productcatalogservice")
+2. **Click "Find Traces"** to see recent traces
+3. **Click on a trace** to see the detailed span view
+4. **Analyze the timeline** to see request flow and timing
+
+**Useful Jaeger Features:**
+- Filter by operation (gRPC method name)
+- Search by tags (service.name, http.method, etc.)
+- Compare traces to identify performance regressions
+- Export traces for further analysis
+
+### Trace-Based Coverage (Future)
+
+In future enhancements, the framework will automatically:
+- Extract service and method coverage from traces
+- Generate HTML coverage reports
+- Track coverage improvements across test runs
+- Identify untested workflows
+
+See [deploy_scripts/README.md](deploy_scripts/README.md) for detailed observability setup documentation.
+
+---
+
 **Happy Testing!** 🧪✨
