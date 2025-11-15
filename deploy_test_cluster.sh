@@ -133,10 +133,17 @@ fi
 # Ensure kubectl context is set correctly
 kubectl config use-context "kind-${CLUSTER_NAME}" >/dev/null 2>&1
 
-# Deploy the microservices-demo stack
-print_info "Deploying microservices-demo stack..."
-kubectl apply -f "$MANIFEST_FILE"
-print_success "Manifests applied successfully"
+# Deploy the microservices-demo stack using Kustomize overlay
+print_info "Deploying microservices-demo stack with test-tracing overlay..."
+KUSTOMIZE_OVERLAY="$SCRIPT_DIR/microservices-demo/kustomize/overlays/test"
+
+if [ ! -d "$KUSTOMIZE_OVERLAY" ]; then
+    print_error "Kustomize overlay not found at: $KUSTOMIZE_OVERLAY"
+    exit 1
+fi
+
+kubectl apply -k "$KUSTOMIZE_OVERLAY"
+print_success "Manifests applied successfully (with tracing enabled)"
 
 # Wait for all deployments to be ready
 print_info "Waiting for all deployments to be ready..."

@@ -93,6 +93,12 @@ declare -a SERVICES=(
     "frontend:8080:80"
 )
 
+# Observability services (optional - only forward if they exist)
+declare -a OBSERVABILITY_SERVICES=(
+    "jaeger-query:16686:16686"
+    "opentelemetrycollector:8888:8888"  # OTel Collector metrics endpoint
+)
+
 print_info "Setting up port-forwards for ${#SERVICES[@]} services..."
 echo ""
 
@@ -102,6 +108,40 @@ echo ""
 # Set up port-forwards
 for service_config in "${SERVICES[@]}"; do
     IFS=':' read -r service local_port service_port <<< "$service_config"
+
+    print_info "Port-forwarding $service: localhost:$local_port -> $service:$service_port"
+
+    # Start port-forward in background
+    kubectl port-forward "svc/$service" "$local_port:$service_port" -n "$NAMESPACE" > /dev/null 2>&1 &
+
+    # Save PID
+    echo $! >> "$PID_FILE"
+
+    # Give it a moment to start
+    sleep 0.5
+
+    # Verify port-forward is running
+    if ps -p $! > /dev/null 2>&1; then
+        print_success "✓ $service ready on localhost:$local_port"
+    else
+        print_warning "⚠ Failed to start port-forward for $service"
+    fi
+done
+
+echo ""
+
+# Set up observability service port-forwards (if they exist)
+print_info "Setting up observability service port-forwards..."
+echo ""
+
+for service_config in "${OBSERVABILITY_SERVICES[@]}"; do
+    IFS=':' read -r service local_port service_port <<< "$service_config"
+
+    # Check if service exists
+    if ! kubectl get svc "$service" -n "$NAMESPACE" > /dev/null 2>&1; then
+        print_info "⊘ $service not deployed, skipping"
+        continue
+    fi
 
     print_info "Port-forwarding $service: localhost:$local_port -> $service:$service_port"
 
@@ -140,6 +180,14 @@ echo "  Email:              localhost:5000"
 echo "  Ad Service:         localhost:9555"
 echo "  Frontend (HTTP):    localhost:8080"
 echo ""
+
+# Check if observability services were forwarded
+if kubectl get svc jaeger-query -n "$NAMESPACE" > /dev/null 2>&1; then
+    print_info "Observability Endpoints:"
+    echo "  Jaeger UI:          http://localhost:16686"
+    echo "  OTel Collector:     http://localhost:8888/metrics"
+    echo ""
+fi
 
 if [ "$BACKGROUND_MODE" = true ]; then
     print_info "Port-forwards running in background"

@@ -54,29 +54,163 @@ print_info "Microservices Demo - Complete Workflow"
 print_info "========================================="
 echo ""
 
-# Step 1: Deploy the test cluster
-print_info "Step 1: Deploying microservices to Kind cluster..."
+# Step 1: Build Docker images locally
+print_info "Step 1: Building Node.js Docker images (local only)..."
 echo ""
 
-if [ ! -f "$SCRIPT_DIR/deploy_test_cluster.sh" ]; then
-    print_error "deploy_test_cluster.sh not found in $SCRIPT_DIR"
+CURRENCY_IMAGE_EXISTS=$(docker images -q currencyservice:local-fixed 2> /dev/null)
+PAYMENT_IMAGE_EXISTS=$(docker images -q paymentservice:local-fixed 2> /dev/null)
+
+if [ -z "$CURRENCY_IMAGE_EXISTS" ]; then
+    print_info "Building currencyservice:local-fixed..."
+    cd "$SCRIPT_DIR/microservices-demo/src/currencyservice"
+    docker build -t currencyservice:local-fixed . > /dev/null 2>&1
+    print_success "✓ currencyservice image built"
+    cd "$SCRIPT_DIR"
+else
+    print_info "✓ currencyservice:local-fixed already exists"
+fi
+
+if [ -z "$PAYMENT_IMAGE_EXISTS" ]; then
+    print_info "Building paymentservice:local-fixed..."
+    cd "$SCRIPT_DIR/microservices-demo/src/paymentservice"
+    docker build -t paymentservice:local-fixed . > /dev/null 2>&1
+    print_success "✓ paymentservice image built"
+    cd "$SCRIPT_DIR"
+else
+    print_info "✓ paymentservice:local-fixed already exists"
+fi
+
+echo ""
+
+# Step 2: Create/verify Kind cluster
+print_info "Step 2: Creating Kind cluster..."
+echo ""
+
+CLUSTER_NAME="microservices-demo"
+
+# Check if cluster already exists
+if kind get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
+    print_warning "Kind cluster '${CLUSTER_NAME}' already exists"
+    read -p "Do you want to delete and recreate the cluster? (y/n): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        print_info "Deleting existing cluster..."
+        kind delete cluster --name "$CLUSTER_NAME"
+        print_success "Cluster deleted"
+
+        print_info "Creating new cluster..."
+        kind create cluster --name "$CLUSTER_NAME"
+        print_success "Cluster created"
+    else
+        print_info "Using existing cluster"
+
+        # Check for existing deployments
+        kubectl config use-context "kind-${CLUSTER_NAME}" >/dev/null 2>&1
+        EXISTING_DEPLOYMENTS=$(kubectl get deployments --all-namespaces --no-headers 2>/dev/null | wc -l | tr -d ' ')
+
+        if [ "$EXISTING_DEPLOYMENTS" -gt 0 ]; then
+            print_warning "Found $EXISTING_DEPLOYMENTS existing deployment(s) in the cluster"
+            kubectl get deployments --all-namespaces
+            echo ""
+            read -p "Do you want to delete existing deployments before redeploying? (y/n): " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                print_info "Deleting existing deployments..."
+                kubectl delete all --all -n default --timeout=60s
+                print_success "Existing deployments deleted"
+                sleep 3
+            else
+                print_info "Keeping existing deployments (may cause conflicts)"
+            fi
+        fi
+    fi
+else
+    print_info "No existing cluster found, creating new cluster..."
+    kind create cluster --name "$CLUSTER_NAME"
+    print_success "Cluster created"
+fi
+
+kubectl config use-context "kind-${CLUSTER_NAME}" >/dev/null 2>&1
+
+echo ""
+
+# Step 3: Load images into cluster
+print_info "Step 3: Loading images into Kind cluster..."
+echo ""
+
+kind load docker-image currencyservice:local-fixed --name "$CLUSTER_NAME"
+print_success "✓ currencyservice loaded"
+
+kind load docker-image paymentservice:local-fixed --name "$CLUSTER_NAME"
+print_success "✓ paymentservice loaded"
+
+echo ""
+
+# Step 4: Deploy services with Kustomize
+print_info "Step 4: Deploying microservices (Kustomize + tracing)..."
+echo ""
+
+kubectl apply -k "$SCRIPT_DIR/microservices-demo/kustomize/overlays/test/"
+print_success "Manifests applied successfully"
+echo ""
+
+# Wait for all deployments to be ready
+print_info "Waiting for all deployments to be ready..."
+echo ""
+
+DEPLOYMENTS=$(kubectl get deployments -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
+
+if [ -z "$DEPLOYMENTS" ]; then
+    print_error "No deployments found in the cluster"
     exit 1
 fi
 
-# Run deployment script
-"$SCRIPT_DIR/deploy_test_cluster.sh"
+# Wait for each deployment to be ready
+ALL_READY=false
+TIMEOUT=600  # 10 minutes timeout
+ELAPSED=0
+SLEEP_INTERVAL=5
 
-# Check if deployment was successful
-if [ $? -ne 0 ]; then
-    print_error "Deployment failed. Please check the errors above."
+while [ "$ALL_READY" = false ] && [ $ELAPSED -lt $TIMEOUT ]; do
+    ALL_READY=true
+
+    for deployment in $DEPLOYMENTS; do
+        # Get desired and ready replicas
+        DESIRED=$(kubectl get deployment "$deployment" -o jsonpath='{.spec.replicas}' 2>/dev/null)
+        READY=$(kubectl get deployment "$deployment" -o jsonpath='{.status.readyReplicas}' 2>/dev/null)
+
+        # Handle empty values
+        DESIRED=${DESIRED:-0}
+        READY=${READY:-0}
+
+        if [ "$READY" -ne "$DESIRED" ]; then
+            ALL_READY=false
+        fi
+    done
+
+    if [ "$ALL_READY" = false ]; then
+        if [ $((ELAPSED % 10)) -eq 0 ]; then  # Print every 10 seconds
+            print_info "Still waiting... (${ELAPSED}s elapsed)"
+            kubectl get deployments
+            echo ""
+        fi
+        sleep $SLEEP_INTERVAL
+        ELAPSED=$((ELAPSED + SLEEP_INTERVAL))
+    fi
+done
+
+if [ "$ALL_READY" = false ]; then
+    print_error "Timeout waiting for deployments to be ready after ${TIMEOUT}s"
+    kubectl get deployments
     exit 1
 fi
 
-print_success "Deployment completed successfully!"
+print_success "All deployments are ready!"
 echo ""
 
-# Step 2: Set up port-forwarding in background
-print_info "Step 2: Setting up port-forwarding for services..."
+# Step 5: Set up port-forwarding in background
+print_info "Step 5: Setting up port-forwarding for services..."
 echo ""
 
 if [ ! -f "$SCRIPT_DIR/port_forward_services.sh" ]; then
@@ -205,8 +339,8 @@ echo ""
 print_info "Allowing services final initialization time..."
 sleep 2
 
-# Step 3: Run tests (when test framework is ready)
-print_info "Step 3: Running tests..."
+# Step 6: Run tests (when test framework is ready)
+print_info "Step 6: Running tests..."
 echo ""
 
 # Check if test framework exists
@@ -242,13 +376,16 @@ fi
 
 echo ""
 
-# Step 4: Summary
+# Step 7: Summary
 print_success "========================================="
 print_success "Workflow Complete!"
 print_success "========================================="
 echo ""
 print_info "Summary:"
-print_info "  ✓ Cluster deployed with all services"
+print_info "  ✓ Cluster deployed with all services (Kustomize overlay)"
+print_info "  ✓ Node.js services built with OTel fixes"
+print_info "  ✓ Tracing enabled on all services (via Kustomize component)"
+print_info "  ✓ Observability stack deployed (OTel Collector + Jaeger)"
 print_info "  ✓ Port-forwards active on localhost"
 print_info "  ✓ Tests executed (if available)"
 echo ""
@@ -257,6 +394,9 @@ echo "  - Product Catalog:  localhost:3550"
 echo "  - Cart Service:     localhost:7070"
 echo "  - Recommendation:   localhost:8080"
 echo "  - Frontend:         localhost:8080"
+echo ""
+print_info "Observability:"
+echo "  - Jaeger UI:        http://localhost:16686"
 echo ""
 print_warning "Port-forwards will be cleaned up automatically on exit"
 echo ""

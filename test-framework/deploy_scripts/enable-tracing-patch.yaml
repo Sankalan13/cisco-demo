@@ -1,0 +1,177 @@
+# Kustomize Patch to Enable OpenTelemetry Tracing on Microservices
+# This patch adds ENABLE_TRACING and COLLECTOR_SERVICE_ADDR to all services
+#
+# Usage:
+#   kubectl patch deployment <service-name> --patch-file enable-tracing-patch.yaml
+#
+# Or use the deploy script which applies this automatically
+
+---
+# Frontend Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  template:
+    spec:
+      containers:
+      - name: server
+        env:
+        - name: ENABLE_TRACING
+          value: "1"
+        - name: COLLECTOR_SERVICE_ADDR
+          value: "opentelemetrycollector:4317"
+
+---
+# Checkout Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkoutservice
+spec:
+  template:
+    spec:
+      containers:
+      - name: server
+        env:
+        - name: ENABLE_TRACING
+          value: "1"
+        - name: COLLECTOR_SERVICE_ADDR
+          value: "opentelemetrycollector:4317"
+
+---
+# Product Catalog Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: productcatalogservice
+spec:
+  template:
+    spec:
+      containers:
+      - name: server
+        env:
+        - name: ENABLE_TRACING
+          value: "1"
+        - name: COLLECTOR_SERVICE_ADDR
+          value: "opentelemetrycollector:4317"
+
+---
+# Currency Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: currencyservice
+spec:
+  template:
+    spec:
+      containers:
+      - name: server
+        env:
+        - name: ENABLE_TRACING
+          value: "1"
+        - name: COLLECTOR_SERVICE_ADDR
+          value: "opentelemetrycollector:4317"
+
+---
+# Payment Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paymentservice
+spec:
+  template:
+    spec:
+      containers:
+      - name: server
+        env:
+        - name: ENABLE_TRACING
+          value: "1"
+        - name: COLLECTOR_SERVICE_ADDR
+          value: "opentelemetrycollector:4317"
+
+---
+# Email Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emailservice
+spec:
+  template:
+    spec:
+      containers:
+      - name: server
+        env:
+        - name: ENABLE_TRACING
+          value: "1"
+        - name: COLLECTOR_SERVICE_ADDR
+          value: "opentelemetrycollector:4317"
+
+---
+# Recommendation Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommendationservice
+spec:
+  template:
+    spec:
+      containers:
+      - name: server
+        env:
+        - name: ENABLE_TRACING
+          value: "1"
+        - name: COLLECTOR_SERVICE_ADDR
+          value: "opentelemetrycollector:4317"
+
+---
+# Shipping Service (tracing not fully implemented, but add env vars anyway)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shippingservice
+spec:
+  template:
+    spec:
+      containers:
+      - name: server
+        env:
+        - name: ENABLE_TRACING
+          value: "1"
+        - name: COLLECTOR_SERVICE_ADDR
+          value: "opentelemetrycollector:4317"
+
+---
+# Cart Service (no tracing support, but adding for future compatibility)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cartservice
+spec:
+  template:
+    spec:
+      containers:
+      - name: server
+        env:
+        - name: ENABLE_TRACING
+          value: "1"
+        - name: COLLECTOR_SERVICE_ADDR
+          value: "opentelemetrycollector:4317"
+
+---
+# Ad Service (no tracing support, but adding for future compatibility)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: adservice
+spec:
+  template:
+    spec:
+      containers:
+      - name: server
+        env:
+        - name: ENABLE_TRACING
+          value: "1"
+        - name: COLLECTOR_SERVICE_ADDR
+          value: "opentelemetrycollector:4317"

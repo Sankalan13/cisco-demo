@@ -1,0 +1,85 @@
+# OpenTelemetry Collector Configuration for Test Coverage
+# This collector receives traces from microservices-demo and exports to Jaeger
+
+receivers:
+  # OTLP receiver for gRPC (port 4317)
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  # Batch processor - improves performance by batching spans
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+
+  # Resource processor - adds test environment attributes
+  resource:
+    attributes:
+      - key: environment
+        value: "test"
+        action: upsert
+      - key: deployment.type
+        value: "kind-local"
+        action: upsert
+
+  # Memory limiter - prevents OOM
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+exporters:
+  # OTLP exporter - sends traces to Jaeger via OTLP protocol
+  # Note: Jaeger exporter is deprecated, use OTLP instead
+  # Jaeger supports OTLP natively on port 4317
+  otlp:
+    endpoint: jaeger-collector:4317
+    tls:
+      insecure: true
+
+  # Logging exporter - useful for debugging
+  logging:
+    loglevel: info
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+  # Additional OTLP exporter - can export to additional backends if needed
+  # otlp/2:
+  #   endpoint: another-collector:4317
+  #   tls:
+  #     insecure: true
+
+extensions:
+  # Health check extension for liveness/readiness probes
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  # Telemetry configuration for the collector itself
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      level: detailed
+      address: 0.0.0.0:8888
+
+  # Extensions for health check and monitoring
+  extensions: [health_check]
+
+  pipelines:
+    # Traces pipeline
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [otlp, logging]
+
+    # Metrics pipeline (if services export metrics)
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [logging]

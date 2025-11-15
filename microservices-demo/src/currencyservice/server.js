@@ -51,7 +51,7 @@ if(process.env.ENABLE_TRACING == "1") {
   logger.info("Tracing enabled.")
   const { NodeTracerProvider } = require('@opentelemetry/sdk-trace-node');
   const { SimpleSpanProcessor } = require('@opentelemetry/sdk-trace-base');
-  const { OTLPTraceExporter } = require("@opentelemetry/exporter-otlp-grpc");
+  const { OTLPTraceExporter } = require("@opentelemetry/exporter-trace-otlp-grpc");
   const { Resource } = require('@opentelemetry/resources');
   const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventions');
 
