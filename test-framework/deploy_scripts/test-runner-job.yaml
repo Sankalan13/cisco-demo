@@ -1,0 +1,72 @@
+# Kubernetes Job for running BDD tests in-cluster
+# This Job runs the test framework container, executes tests against microservices,
+# generates coverage reports, and stores results in a PersistentVolume
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: test-runner
+  namespace: default
+  labels:
+    app: test-runner
+    component: testing
+spec:
+  # Do not retry on failure - tests should be deterministic
+  backoffLimit: 0
+
+  # Clean up completed job after 1 hour (3600 seconds)
+  ttlSecondsAfterFinished: 3600
+
+  template:
+    metadata:
+      labels:
+        app: test-runner
+        component: testing
+    spec:
+      # Use dedicated service account with minimal permissions
+      serviceAccountName: test-runner
+
+      # Do not restart on failure - one-time execution
+      restartPolicy: Never
+
+      containers:
+        - name: test-runner
+          image: test-framework:latest
+          imagePullPolicy: IfNotPresent  # Use local image loaded into Kind
+
+          env:
+            # Set test mode to kubernetes (uses services-k8s.yaml)
+            - name: TEST_MODE
+              value: "kubernetes"
+
+            # OpenTelemetry Collector endpoint (in-cluster DNS)
+            - name: OTEL_COLLECTOR_ENDPOINT
+              value: "opentelemetrycollector:4317"
+
+            # Jaeger query endpoint (in-cluster DNS)
+            - name: JAEGER_ENDPOINT
+              value: "jaeger-query:16686"
+
+            # Python unbuffered output for immediate log visibility
+            - name: PYTHONUNBUFFERED
+              value: "1"
+
+          # Volume mount for test reports
+          volumeMounts:
+            - name: test-reports
+              mountPath: /app/reports
+
+          # Resource limits to prevent resource starvation
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+
+      # Volume for persisting test reports
+      volumes:
+        - name: test-reports
+          persistentVolumeClaim:
+            claimName: test-reports

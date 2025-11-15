@@ -2,8 +2,39 @@
 
 # run_all.sh
 # Master script to deploy cluster, set up port-forwarding, run tests, and cleanup
+#
+# Usage:
+#   ./run_all.sh                      # Run tests locally with port-forwarding
+#   ./run_all.sh --deploy-tests       # Deploy tests as Kubernetes Job
 
 set -e
+
+# Parse command-line arguments
+DEPLOY_TESTS_TO_K8S=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --deploy-tests|--deploy-tests-to-k8s)
+            DEPLOY_TESTS_TO_K8S=true
+            shift
+            ;;
+        --help|-h)
+            echo "Usage: $0 [OPTIONS]"
+            echo ""
+            echo "Options:"
+            echo "  --deploy-tests        Deploy tests as Kubernetes Job (in-cluster execution)"
+            echo "  --help, -h            Show this help message"
+            echo ""
+            echo "Default behavior (no flags): Run tests locally with port-forwarding"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
 
 # Color codes
 RED='\033[0;31m'
@@ -45,12 +76,19 @@ cleanup_port_forwards() {
     fi
 }
 
-# Set up trap to ensure cleanup
-trap cleanup_port_forwards EXIT INT TERM
+# Set up trap to ensure cleanup (only for local mode)
+if [ "$DEPLOY_TESTS_TO_K8S" = false ]; then
+    trap cleanup_port_forwards EXIT INT TERM
+fi
 
 echo ""
 print_info "========================================="
 print_info "Microservices Demo - Complete Workflow"
+if [ "$DEPLOY_TESTS_TO_K8S" = true ]; then
+    print_info "Mode: Kubernetes Job Deployment"
+else
+    print_info "Mode: Local Execution with Port-Forwarding"
+fi
 print_info "========================================="
 echo ""
 
@@ -209,33 +247,39 @@ fi
 print_success "All deployments are ready!"
 echo ""
 
-# Step 5: Set up port-forwarding in background
-print_info "Step 5: Setting up port-forwarding for services..."
-echo ""
+# Step 5: Set up port-forwarding (skip in K8s mode)
+if [ "$DEPLOY_TESTS_TO_K8S" = false ]; then
+    print_info "Step 5: Setting up port-forwarding for services..."
+    echo ""
 
-if [ ! -f "$SCRIPT_DIR/port_forward_services.sh" ]; then
-    print_error "port_forward_services.sh not found in $SCRIPT_DIR"
-    exit 1
+    if [ ! -f "$SCRIPT_DIR/port_forward_services.sh" ]; then
+        print_error "port_forward_services.sh not found in $SCRIPT_DIR"
+        exit 1
+    fi
+
+    # Run port-forward script in background mode
+    "$SCRIPT_DIR/port_forward_services.sh" --background
+
+    # Check if port-forwards were set up successfully
+    if [ $? -ne 0 ]; then
+        print_error "Port-forwarding setup failed"
+        exit 1
+    fi
+
+    print_success "Port-forwards established!"
+    echo ""
+else
+    print_info "Step 5: Skipping port-forwarding (tests run in-cluster)"
+    echo ""
 fi
 
-# Run port-forward script in background mode
-"$SCRIPT_DIR/port_forward_services.sh" --background
+# Verify port connectivity before proceeding with tests (skip in K8s mode)
+if [ "$DEPLOY_TESTS_TO_K8S" = false ]; then
+    print_info "Verifying port-forward connectivity with retry logic..."
+    echo ""
 
-# Check if port-forwards were set up successfully
-if [ $? -ne 0 ]; then
-    print_error "Port-forwarding setup failed"
-    exit 1
-fi
-
-print_success "Port-forwards established!"
-echo ""
-
-# Verify port connectivity before proceeding with tests
-print_info "Verifying port-forward connectivity with retry logic..."
-echo ""
-
-# Define ports to check (matches services.yaml configuration)
-declare -a PORTS_TO_CHECK=(
+    # Define ports to check (matches services.yaml configuration)
+    declare -a PORTS_TO_CHECK=(
     "3550:Product Catalog"
     "7070:Cart Service"
     "8080:Recommendation Service"
@@ -332,63 +376,96 @@ if [ "$all_verified" = false ]; then
     exit 1
 fi
 
-print_success "All port-forwards are ready!"
-echo ""
+    print_success "All port-forwards are ready!"
+    echo ""
 
-# Additional grace period for service initialization
-print_info "Allowing services final initialization time..."
-sleep 2
+    # Additional grace period for service initialization
+    print_info "Allowing services final initialization time..."
+    sleep 2
+else
+    print_info "Services are ready for in-cluster testing"
+    echo ""
+fi
 
-# Step 6: Run tests (when test framework is ready)
+# Step 6: Run tests
 print_info "Step 6: Running tests..."
 echo ""
 
 # Check if test framework exists
 if [ -d "$SCRIPT_DIR/test-framework" ]; then
-    cd "$SCRIPT_DIR/test-framework"
 
-    # Check if dependencies are installed
-    if ! python3 -c "import behave" 2>/dev/null; then
-        print_warning "Test dependencies not installed. Installing..."
-        pip3 install -r requirements.txt
-    fi
-
-    # Generate proto code if needed
-    if [ ! -d "generated" ] || [ -z "$(ls -A generated 2>/dev/null)" ]; then
-        print_info "Generating proto code..."
-        ./generate_protos.sh
-    fi
-
-    # Run tests if test files exist
-    if [ -d "features" ] && [ "$(ls -A features/*.feature 2>/dev/null)" ]; then
-        print_info "Executing Behave tests..."
-        behave features/ -v --junit --junit-directory reports/ || true
+    if [ "$DEPLOY_TESTS_TO_K8S" = true ]; then
+        # Kubernetes Job deployment mode
+        print_info "Deploying tests as Kubernetes Job..."
         echo ""
-        print_success "Test execution complete!"
-    else
-        print_warning "No test feature files found yet. Skipping test execution."
-    fi
 
-    cd "$SCRIPT_DIR"
+        cd "$SCRIPT_DIR/test-framework/deploy_scripts"
+        ./deploy_test_runner.sh
+
+        if [ $? -eq 0 ]; then
+            print_success "Test Job completed successfully"
+            echo ""
+
+            # Automatically retrieve reports
+            print_info "Retrieving test reports from Kubernetes PVC..."
+            ./get_test_reports.sh
+
+            print_success "Test execution and report retrieval complete!"
+        else
+            print_error "Test Job failed"
+            print_info "Check Job logs: kubectl logs job/test-runner"
+            print_info "To retrieve any reports that were generated: cd test-framework/deploy_scripts && ./get_test_reports.sh"
+        fi
+
+        cd "$SCRIPT_DIR"
+    else
+        # Local execution mode (original behavior)
+        cd "$SCRIPT_DIR/test-framework"
+
+        # Check if dependencies are installed
+        if ! python3 -c "import behave" 2>/dev/null; then
+            print_warning "Test dependencies not installed. Installing..."
+            pip3 install -r requirements.txt
+        fi
+
+        # Generate proto code if needed
+        if [ ! -d "generated" ] || [ -z "$(ls -A generated 2>/dev/null)" ]; then
+            print_info "Generating proto code..."
+            ./generate_protos.sh
+        fi
+
+        # Run tests if test files exist
+        if [ -d "features" ] && [ "$(ls -A features/*.feature 2>/dev/null)" ]; then
+            print_info "Executing Behave tests (local mode)..."
+            behave features/ -v --junit --junit-directory reports/ || true
+            echo ""
+            print_success "Test execution complete!"
+        else
+            print_warning "No test feature files found yet. Skipping test execution."
+        fi
+
+        cd "$SCRIPT_DIR"
+    fi
 else
     print_warning "Test framework directory not found. Skipping tests."
 fi
 
 echo ""
 
-# Allow additional time for spans to propagate to Jaeger
-# Even though the test framework flushes spans, there can be network/processing delays
-print_info "Waiting for distributed traces to propagate to Jaeger..."
-sleep 3
-print_success "Ready to query Jaeger for coverage metrics"
-echo ""
+# Step 7: Generate Coverage Metrics (skip in K8s mode - handled by Job)
+if [ "$DEPLOY_TESTS_TO_K8S" = false ]; then
+    # Allow additional time for spans to propagate to Jaeger
+    # Even though the test framework flushes spans, there can be network/processing delays
+    print_info "Waiting for distributed traces to propagate to Jaeger..."
+    sleep 3
+    print_success "Ready to query Jaeger for coverage metrics"
+    echo ""
 
-# Step 7: Generate Coverage Metrics
-print_info "Step 7: Generating test coverage metrics from Jaeger..."
-echo ""
+    print_info "Step 7: Generating test coverage metrics from Jaeger..."
+    echo ""
 
-# Check if test framework exists and tests were run
-if [ -d "$SCRIPT_DIR/test-framework" ]; then
+    # Check if test framework exists and tests were run
+    if [ -d "$SCRIPT_DIR/test-framework" ]; then
     cd "$SCRIPT_DIR/test-framework"
 
     # Check if test execution time file exists (indicates tests were run)
@@ -482,11 +559,15 @@ PYTHON_SUMMARY
     fi
 
     cd "$SCRIPT_DIR"
-else
-    print_warning "Test framework directory not found. Skipping coverage generation."
-fi
+    else
+        print_warning "Test framework directory not found. Skipping coverage generation."
+    fi
 
-echo ""
+    echo ""
+else
+    print_info "Step 7: Skipping coverage generation (already handled by Kubernetes Job)"
+    echo ""
+fi
 
 # Step 8: Summary
 print_success "========================================="

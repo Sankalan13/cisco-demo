@@ -10,29 +10,9 @@ Feature: Product Browsing and Cart Management # features/product_browsing.featur
     When I add the product to my cart with quantity 2             # features/steps/cart_steps.py:13
     Then the item should be added successfully                    # features/steps/cart_steps.py:33
     When I retrieve my cart contents                              # features/steps/cart_steps.py:42
-      Assertion Failed: Failed to get cart: StatusCode.UNAVAILABLE - Socket closed
-      Captured logging:
-      INFO: Calling ListProducts()
-      INFO: Received 9 products
-      INFO: Retrieved 9 products
-      INFO: ✓ Product list contains 9 products
-      INFO: Calling GetProduct(id=OLJCESPC7Z)
-      INFO: Received product: Sunglasses
-      INFO: Retrieved product details for: Sunglasses (ID: OLJCESPC7Z)
-      INFO: ✓ Product has complete information:
-      INFO:   ID: OLJCESPC7Z
-      INFO:   Name: Sunglasses
-      INFO:   Price: 19.990000000 USD
-      INFO:   Categories: accessories
-      INFO: Calling AddItem(user_id=test-user-20251116_003453_270191, product_id=OLJCESPC7Z, quantity=2)
-      INFO: Item added to cart successfully
-      INFO: Added 2x Sunglasses to cart
-      INFO: ✓ Item added to cart successfully
-      INFO: Calling GetCart(user_id=test-user-20251116_003453_270191)
-
-    Then my cart should contain 1 item                            # None
-    And the item quantity should be 2                             # None
-    And the product ID in the cart should match the added product # None
-    When I request recommendations based on my cart               # None
-    Then I should receive product recommendations                 # None
+    Then my cart should contain 1 item                            # features/steps/cart_steps.py:56
+    And the item quantity should be 2                             # features/steps/cart_steps.py:67
+    And the product ID in the cart should match the added product # features/steps/cart_steps.py:81
+    When I request recommendations based on my cart               # features/steps/recommendation_steps.py:10
+    Then I should receive product recommendations                 # features/steps/recommendation_steps.py:31
 
