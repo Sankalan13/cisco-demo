@@ -1,0 +1,18 @@
+Feature: Product Browsing and Cart Management # features/product_browsing.feature:1
+  As a customer
+  I want to browse products and add them to my cart
+  So that I can prepare for checkout
+  Scenario: Browse products and add item to cart                  # features/product_browsing.feature:6
+    When I list all available products                            # features/steps/product_steps.py:10
+    Then I should receive a non-empty product list                # features/steps/product_steps.py:22
+    When I get details for the first product                      # features/steps/product_steps.py:30
+    Then I should receive complete product information            # features/steps/product_steps.py:48
+    When I add the product to my cart with quantity 2             # features/steps/cart_steps.py:13
+    Then the item should be added successfully                    # features/steps/cart_steps.py:33
+    When I retrieve my cart contents                              # features/steps/cart_steps.py:42
+    Then my cart should contain 1 item                            # features/steps/cart_steps.py:56
+    And the item quantity should be 2                             # features/steps/cart_steps.py:67
+    And the product ID in the cart should match the added product # features/steps/cart_steps.py:81
+    When I request recommendations based on my cart               # features/steps/recommendation_steps.py:10
+    Then I should receive product recommendations                 # features/steps/recommendation_steps.py:31
+

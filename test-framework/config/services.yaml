@@ -1,0 +1,77 @@
+# Service Configuration for Test Framework
+# Port-forwarding is automatically set up by port_forward_services.sh
+
+services:
+  productcatalog:
+    name: productcatalogservice
+    host: localhost
+    port: 3550
+    k8s_service: productcatalogservice
+    k8s_port: 3550
+
+  cart:
+    name: cartservice
+    host: localhost
+    port: 7070
+    k8s_service: cartservice
+    k8s_port: 7070
+
+  recommendation:
+    name: recommendationservice
+    host: localhost
+    port: 8080
+    k8s_service: recommendationservice
+    k8s_port: 8080
+
+  checkout:
+    name: checkoutservice
+    host: localhost
+    port: 5050
+    k8s_service: checkoutservice
+    k8s_port: 5050
+
+  currency:
+    name: currencyservice
+    host: localhost
+    port: 7000
+    k8s_service: currencyservice
+    k8s_port: 7000
+
+  payment:
+    name: paymentservice
+    host: localhost
+    port: 50051
+    k8s_service: paymentservice
+    k8s_port: 50051
+
+  shipping:
+    name: shippingservice
+    host: localhost
+    port: 50052  # Different local port to avoid conflict with payment
+    k8s_service: shippingservice
+    k8s_port: 50051
+
+  email:
+    name: emailservice
+    host: localhost
+    port: 5000
+    k8s_service: emailservice
+    k8s_port: 5000
+
+  ad:
+    name: adservice
+    host: localhost
+    port: 9555
+    k8s_service: adservice
+    k8s_port: 9555
+
+# Test configuration
+test:
+  timeout: 30  # Default gRPC call timeout in seconds
+  retry_attempts: 3
+  retry_delay: 2  # Delay between retries in seconds
+
+# Kubernetes configuration
+kubernetes:
+  context: kind-microservices-demo
+  namespace: default

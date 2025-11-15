@@ -1,0 +1,12 @@
+test-framework/venv/
+__pycache__/
+*.pyc
+.DS_Store
+.vscode/
+.idea/
+.env
+.env.*
+logs/
+coverage/
+reports/
+*.log

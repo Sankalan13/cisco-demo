@@ -1,0 +1,21 @@
+# Test Framework Dependencies
+# Using compatible versions to avoid protobuf runtime_version issues
+
+# BDD Testing Framework
+behave==1.2.6
+
+# gRPC and Protocol Buffers
+# NOTE: These versions are tested to work together
+# grpcio-tools bundles its own protoc, so system protoc is NOT required
+grpcio==1.62.2
+grpcio-tools==1.62.2
+protobuf==4.25.3
+
+# Configuration
+pyyaml==6.0.2
+
+# Utilities
+python-dateutil==2.9.0
+
+# Optional: Enhanced reporting
+allure-behave==2.13.5
