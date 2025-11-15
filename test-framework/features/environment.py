@@ -2,9 +2,10 @@
 
 import sys
 import time
+import json
 import logging
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
@@ -22,6 +23,14 @@ from utils.clients import (
     AdServiceClient,
 )
 
+# OpenTelemetry imports
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.instrumentation.grpc import GrpcInstrumentorClient
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -29,15 +38,98 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Global tracer instance
+tracer = None
+
+
+def init_tracing():
+    """Initialize OpenTelemetry tracing for test client instrumentation.
+
+    This sets up:
+    - TracerProvider with test framework identification
+    - OTLP exporter to send traces to OpenTelemetry Collector
+    - Automatic gRPC client instrumentation
+    """
+    global tracer
+
+    # Import config to get OTel Collector endpoint
+    from utils.config_loader import get_config
+    config = get_config()
+
+    # Get OTel Collector endpoint from config
+    # Default to localhost:4317 if not specified
+    try:
+        observability_config = config._config.get('observability', {})
+        otel_config = observability_config.get('otel_collector', {})
+        otel_host = otel_config.get('host', 'localhost')
+        otel_port = otel_config.get('port', 4317)
+        otel_endpoint = f"{otel_host}:{otel_port}"
+    except Exception:
+        # Fallback to default
+        otel_endpoint = "localhost:4317"
+
+    logger.info(f"Initializing OpenTelemetry tracing...")
+    logger.info(f"  OTel Collector endpoint: {otel_endpoint}")
+
+    # Create resource identifying this as the test framework
+    resource = Resource.create({
+        "service.name": "test-framework",
+        "service.version": "1.0.0",
+    })
+
+    # Create TracerProvider
+    provider = TracerProvider(resource=resource)
+
+    # Create OTLP exporter
+    otlp_exporter = OTLPSpanExporter(
+        endpoint=otel_endpoint,
+        insecure=True,  # No TLS for local testing
+    )
+
+    # Add span processor
+    span_processor = BatchSpanProcessor(otlp_exporter)
+    provider.add_span_processor(span_processor)
+
+    # Set as global provider
+    trace.set_tracer_provider(provider)
+
+    # Get tracer instance
+    tracer = trace.get_tracer(__name__)
+
+    # Instrument gRPC clients automatically
+    # This adds trace context propagation to all gRPC channels
+    GrpcInstrumentorClient().instrument()
+
+    logger.info("✓ OpenTelemetry tracing initialized")
+    logger.info("✓ gRPC clients instrumented for distributed tracing")
+
+    return tracer
+
 
 def before_all(context):
     """Set up test environment before all tests.
 
     This hook:
+    - Initializes OpenTelemetry distributed tracing
+    - Records test execution start time for coverage generation
     - Initializes all gRPC clients
     - Performs health checks on all services
     - Fails fast if services are not healthy
     """
+    global tracer
+
+    # Initialize OpenTelemetry tracing first
+    # This must happen before creating gRPC clients
+    try:
+        tracer = init_tracing()
+        context.tracer = tracer
+    except Exception as e:
+        logger.warning(f"Failed to initialize OpenTelemetry tracing: {e}")
+        logger.warning("Tests will run without distributed tracing")
+        context.tracer = None
+
+    # Record test execution start time for coverage generation
+    context.test_start_time = datetime.now(timezone.utc)
     logger.info("="*60)
     logger.info("Setting up test environment...")
     logger.info("="*60)
@@ -132,6 +224,7 @@ def before_scenario(context, scenario):
     """Set up before each scenario.
 
     This hook:
+    - Creates a root span for the test scenario (for distributed tracing)
     - Generates a unique test user ID
     - Logs scenario start
     """
@@ -145,6 +238,24 @@ def before_scenario(context, scenario):
     logger.info(f"Test user ID: {context.user_id}")
     logger.info("="*60)
 
+    # Create root span for this test scenario
+    # This span will be the parent for all gRPC calls made during the test
+    if hasattr(context, 'tracer') and context.tracer is not None:
+        scenario_span = context.tracer.start_span(
+            name=f"test.scenario.{scenario.name}",
+            attributes={
+                "test.user_id": context.user_id,
+                "test.feature": scenario.feature.name,
+                "test.scenario": scenario.name,
+            }
+        )
+        context.scenario_span = scenario_span
+        context.scenario_span_context = trace.set_span_in_context(scenario_span)
+        logger.info(f"✓ Created root span for scenario: {scenario.name}")
+    else:
+        context.scenario_span = None
+        context.scenario_span_context = None
+
     # Initialize scenario-specific state
     context.products = None
     context.current_product = None
@@ -156,6 +267,7 @@ def after_scenario(context, scenario):
     """Clean up after each scenario.
 
     This hook:
+    - Ends the root span for distributed tracing
     - Empties the test user's cart
     - Logs scenario result
     """
@@ -173,6 +285,18 @@ def after_scenario(context, scenario):
     except Exception as e:
         logger.warning(f"Failed to clean up cart: {str(e)}")
 
+    # End the root span for this scenario
+    if hasattr(context, 'scenario_span') and context.scenario_span is not None:
+        # Set span status based on scenario result
+        if scenario.status == 'passed':
+            context.scenario_span.set_status(trace.Status(trace.StatusCode.OK))
+        else:
+            context.scenario_span.set_status(
+                trace.Status(trace.StatusCode.ERROR, f"Scenario failed: {scenario.status}")
+            )
+        context.scenario_span.end()
+        logger.info(f"✓ Ended root span for scenario: {scenario.name}")
+
     logger.info("-"*60)
     logger.info("")
 
@@ -181,6 +305,8 @@ def after_all(context):
     """Clean up after all tests.
 
     This hook:
+    - Records test execution end time for coverage generation
+    - Writes test execution time window to file for coverage script
     - Closes all gRPC client connections
     """
     logger.info("")
@@ -188,24 +314,90 @@ def after_all(context):
     logger.info("Cleaning up test environment...")
     logger.info("="*60)
 
+    # Record test execution end time
+    context.test_end_time = datetime.now(timezone.utc)
+
+    # Write test execution time window to file for coverage generation
+    # This allows run_all.sh to know the exact time range to query
+    # Only write if test_start_time exists (before_all may have failed)
+    if hasattr(context, 'test_start_time') and hasattr(context, 'test_end_time'):
+        test_time_file = project_root / "reports" / "test_execution_time.json"
+        test_time_file.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            # Format datetimes with UTC timezone indicator
+            def format_datetime(dt):
+                """Format datetime with UTC timezone indicator."""
+                if dt is None:
+                    return None
+                # Ensure timezone-aware (should already be UTC)
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                # Use ISO format with 'Z' suffix for UTC
+                return dt.isoformat().replace('+00:00', 'Z')
+
+            test_time_data = {
+                "start_time": format_datetime(context.test_start_time),
+                "end_time": format_datetime(context.test_end_time),
+            }
+
+            with open(test_time_file, "w") as f:
+                json.dump(test_time_data, f, indent=2)
+            logger.info(f"Test execution time window saved to: {test_time_file}")
+        except Exception as e:
+            logger.warning(f"Failed to save test execution time: {e}")
+    else:
+        logger.debug("Test execution time not available (before_all may have failed before recording start time)")
+
+    # Flush OpenTelemetry spans before shutting down
+    # This ensures all spans are exported to the collector before tests end
+    logger.info("Flushing OpenTelemetry spans...")
+    try:
+        # Get the tracer provider and force flush all spans
+        from opentelemetry import trace as otel_trace
+        tracer_provider = otel_trace.get_tracer_provider()
+
+        # Force flush with timeout (give it up to 10 seconds to export all spans)
+        if hasattr(tracer_provider, 'force_flush'):
+            flush_success = tracer_provider.force_flush(timeout_millis=10000)
+            if flush_success:
+                logger.info("✓ All spans flushed successfully")
+            else:
+                logger.warning("⚠ Span flush timed out (some spans may not be exported)")
+        else:
+            logger.warning("TracerProvider does not support force_flush")
+
+        # Add a small delay to ensure spans reach Jaeger
+        import time
+        logger.info("Waiting for spans to reach Jaeger...")
+        time.sleep(2)
+        logger.info("✓ Span export complete")
+
+    except Exception as e:
+        logger.warning(f"Error flushing OpenTelemetry spans: {e}")
+        logger.warning("Some spans may not be exported to Jaeger")
+
     # Close all gRPC client connections
-    clients = [
-        context.product_catalog_client,
-        context.cart_client,
-        context.recommendation_client,
-        context.currency_client,
-        context.checkout_client,
-        context.payment_client,
-        context.shipping_client,
-        context.email_client,
-        context.ad_client,
+    # Only close clients that were successfully initialized (before_all may have failed)
+    client_attrs = [
+        'product_catalog_client',
+        'cart_client',
+        'recommendation_client',
+        'currency_client',
+        'checkout_client',
+        'payment_client',
+        'shipping_client',
+        'email_client',
+        'ad_client',
     ]
 
-    for client in clients:
-        try:
-            client.close()
-        except Exception as e:
-            logger.warning(f"Error closing client: {str(e)}")
+    for client_attr in client_attrs:
+        if hasattr(context, client_attr):
+            try:
+                client = getattr(context, client_attr)
+                client.close()
+            except Exception as e:
+                logger.warning(f"Error closing {client_attr}: {str(e)}")
 
     logger.info("All clients closed")
     logger.info("="*60)

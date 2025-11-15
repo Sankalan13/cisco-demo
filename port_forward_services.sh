@@ -96,6 +96,7 @@ declare -a SERVICES=(
 # Observability services (optional - only forward if they exist)
 declare -a OBSERVABILITY_SERVICES=(
     "jaeger-query:16686:16686"
+    "opentelemetrycollector:4317:4317"  # OTel Collector gRPC trace ingestion
     "opentelemetrycollector:8888:8888"  # OTel Collector metrics endpoint
 )
 
@@ -185,7 +186,8 @@ echo ""
 if kubectl get svc jaeger-query -n "$NAMESPACE" > /dev/null 2>&1; then
     print_info "Observability Endpoints:"
     echo "  Jaeger UI:          http://localhost:16686"
-    echo "  OTel Collector:     http://localhost:8888/metrics"
+    echo "  OTel Collector:     localhost:4317 (gRPC traces)"
+    echo "  OTel Metrics:       http://localhost:8888/metrics"
     echo ""
 fi
 

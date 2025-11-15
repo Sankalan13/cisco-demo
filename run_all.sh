@@ -376,7 +376,119 @@ fi
 
 echo ""
 
-# Step 7: Summary
+# Allow additional time for spans to propagate to Jaeger
+# Even though the test framework flushes spans, there can be network/processing delays
+print_info "Waiting for distributed traces to propagate to Jaeger..."
+sleep 3
+print_success "Ready to query Jaeger for coverage metrics"
+echo ""
+
+# Step 7: Generate Coverage Metrics
+print_info "Step 7: Generating test coverage metrics from Jaeger..."
+echo ""
+
+# Check if test framework exists and tests were run
+if [ -d "$SCRIPT_DIR/test-framework" ]; then
+    cd "$SCRIPT_DIR/test-framework"
+
+    # Check if test execution time file exists (indicates tests were run)
+    TEST_TIME_FILE="reports/test_execution_time.json"
+    COVERAGE_OUTPUT="reports/coverage.json"
+
+    if [ -f "$TEST_TIME_FILE" ]; then
+        print_info "Test execution time window found, using it for coverage query..."
+        
+        # Extract time range from test execution time file
+        # Use Python to parse JSON and generate coverage
+        python3 << 'PYTHON_SCRIPT'
+import json
+import sys
+from pathlib import Path
+from datetime import datetime
+
+try:
+    # Read test execution time
+    test_time_file = Path("reports/test_execution_time.json")
+    if not test_time_file.exists():
+        print("Test execution time file not found")
+        sys.exit(1)
+    
+    with open(test_time_file) as f:
+        time_data = json.load(f)
+    
+    # Preserve timezone information - don't strip "Z"
+    start_time = time_data.get("start_time", "")
+    end_time = time_data.get("end_time", "")
+    
+    if not start_time or not end_time:
+        print("Invalid time data in test execution time file")
+        sys.exit(1)
+    
+    # Generate coverage using the time range
+    import subprocess
+    result = subprocess.run([
+        sys.executable, "generate_coverage.py",
+        "--start-time", start_time,
+        "--end-time", end_time,
+        "--output", "reports/coverage.json"
+    ], capture_output=True, text=True)
+    
+    print(result.stdout)
+    if result.stderr:
+        print(result.stderr, file=sys.stderr)
+    
+    sys.exit(result.returncode)
+except Exception as e:
+    print(f"Error generating coverage: {e}", file=sys.stderr)
+    sys.exit(1)
+PYTHON_SCRIPT
+
+        if [ $? -eq 0 ]; then
+            if [ -f "$COVERAGE_OUTPUT" ]; then
+                print_success "Coverage report generated successfully!"
+                
+                # Display coverage summary
+                print_info "Coverage Summary:"
+                python3 << 'PYTHON_SUMMARY'
+import json
+from pathlib import Path
+
+try:
+    coverage_file = Path("reports/coverage.json")
+    if coverage_file.exists():
+        with open(coverage_file) as f:
+            report = json.load(f)
+        
+        summary = report.get("summary", {})
+        print(f"  Total Services: {summary.get('total_services', 0)}")
+        print(f"  Covered Services: {summary.get('covered_services', 0)}")
+        print(f"  Service Coverage: {summary.get('service_coverage_percentage', 0.0)}%")
+        print(f"  Total Methods: {summary.get('total_methods', 0)}")
+        print(f"  Covered Methods: {summary.get('covered_methods', 0)}")
+        print(f"  Method Coverage: {summary.get('method_coverage_percentage', 0.0)}%")
+        print(f"  Coverage Report: {coverage_file.absolute()}")
+except Exception as e:
+    print(f"  Error reading coverage summary: {e}")
+PYTHON_SUMMARY
+            else
+                print_warning "Coverage generation completed but output file not found"
+            fi
+        else
+            print_warning "Coverage generation failed (Jaeger may not be available or no traces found)"
+        fi
+    else
+        print_warning "Test execution time file not found. Skipping coverage generation."
+        print_info "This is normal if tests were not executed."
+    fi
+
+    cd "$SCRIPT_DIR"
+else
+    print_warning "Test framework directory not found. Skipping coverage generation."
+fi
+
+echo ""
+
+# Step 8: Summary
 print_success "========================================="
 print_success "Workflow Complete!"
 print_success "========================================="
@@ -388,6 +500,7 @@ print_info "  ✓ Tracing enabled on all services (via Kustomize component)"
 print_info "  ✓ Observability stack deployed (OTel Collector + Jaeger)"
 print_info "  ✓ Port-forwards active on localhost"
 print_info "  ✓ Tests executed (if available)"
+print_info "  ✓ Coverage metrics generated (if tests were run)"
 echo ""
 print_info "Services are accessible at:"
 echo "  - Product Catalog:  localhost:3550"
