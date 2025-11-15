@@ -2,7 +2,10 @@
 
 import os
 import yaml
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 class Config:
@@ -13,15 +16,25 @@ class Config:
 
         Args:
             config_path: Path to services.yaml config file.
-                        If None, uses default location.
+                        If None, auto-detects based on TEST_MODE environment variable:
+                        - TEST_MODE=kubernetes -> uses services-k8s.yaml
+                        - TEST_MODE=local (default) -> uses services.yaml
         """
         if config_path is None:
-            # Default to config/services.yaml relative to project root
+            # Auto-detect configuration based on TEST_MODE environment variable
+            test_mode = os.environ.get('TEST_MODE', 'local').lower()
             project_root = Path(__file__).parent.parent
-            config_path = project_root / "config" / "services.yaml"
+
+            if test_mode == 'kubernetes':
+                config_path = project_root / "config" / "services-k8s.yaml"
+                logger.info("Running in KUBERNETES mode - using services-k8s.yaml")
+            else:
+                config_path = project_root / "config" / "services.yaml"
+                logger.info("Running in LOCAL mode - using services.yaml")
 
         self.config_path = Path(config_path)
         self._config = self._load_config()
+        logger.info(f"Configuration loaded from: {self.config_path}")
 
     def _load_config(self):
         """Load configuration from YAML file."""

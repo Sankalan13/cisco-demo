@@ -1,0 +1,90 @@
+# Service Configuration for Test Framework - Kubernetes Mode
+# This configuration is used when tests run inside the Kubernetes cluster
+# Service endpoints use Kubernetes DNS names instead of localhost
+
+services:
+  productcatalog:
+    name: productcatalogservice
+    host: productcatalogservice  # Kubernetes service DNS name
+    port: 3550
+    k8s_service: productcatalogservice
+    k8s_port: 3550
+
+  cart:
+    name: cartservice
+    host: cartservice
+    port: 7070
+    k8s_service: cartservice
+    k8s_port: 7070
+
+  recommendation:
+    name: recommendationservice
+    host: recommendationservice
+    port: 8080
+    k8s_service: recommendationservice
+    k8s_port: 8080
+
+  checkout:
+    name: checkoutservice
+    host: checkoutservice
+    port: 5050
+    k8s_service: checkoutservice
+    k8s_port: 5050
+
+  currency:
+    name: currencyservice
+    host: currencyservice
+    port: 7000
+    k8s_service: currencyservice
+    k8s_port: 7000
+
+  payment:
+    name: paymentservice
+    host: paymentservice
+    port: 50051
+    k8s_service: paymentservice
+    k8s_port: 50051
+
+  shipping:
+    name: shippingservice
+    host: shippingservice
+    port: 50051  # Use K8s port (no port conflict in cluster)
+    k8s_service: shippingservice
+    k8s_port: 50051
+
+  email:
+    name: emailservice
+    host: emailservice
+    port: 5000
+    k8s_service: emailservice
+    k8s_port: 5000
+
+  ad:
+    name: adservice
+    host: adservice
+    port: 9555
+    k8s_service: adservice
+    k8s_port: 9555
+
+# Test configuration
+test:
+  timeout: 30  # Default gRPC call timeout in seconds
+  retry_attempts: 3
+  retry_delay: 2  # Delay between retries in seconds
+
+# Kubernetes configuration
+kubernetes:
+  context: kind-microservices-demo
+  namespace: default
+
+# Observability configuration - in-cluster endpoints
+observability:
+  jaeger:
+    host: jaeger-query  # Kubernetes service DNS name
+    port: 16686
+    # Full URL will be constructed as http://{host}:{port}
+
+  otel_collector:
+    host: opentelemetrycollector  # Kubernetes service DNS name
+    port: 4317
+    # OpenTelemetry Collector gRPC endpoint for trace export

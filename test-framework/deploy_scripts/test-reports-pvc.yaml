@@ -1,0 +1,19 @@
+# PersistentVolumeClaim for test reports and coverage data
+# This volume persists test results even after the Job pod is deleted
+# Reports can be retrieved using the get_test_reports.sh script
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-reports
+  namespace: default
+  labels:
+    app: test-runner
+    component: testing
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard  # Default storage class for Kind clusters
+  resources:
+    requests:
+      storage: 1Gi

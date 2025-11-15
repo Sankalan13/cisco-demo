@@ -7,9 +7,11 @@ behave==1.2.6
 # gRPC and Protocol Buffers
 # NOTE: These versions are tested to work together
 # grpcio-tools bundles its own protoc, so system protoc is NOT required
-grpcio==1.62.2
-grpcio-tools==1.62.2
-protobuf==4.25.3
+# Updated to 1.68.1 to satisfy opentelemetry-exporter-otlp-proto-grpc requirements (grpcio>=1.63.2)
+# Updated protobuf to 5.26.1+ to satisfy grpcio-tools 1.68.1 requirements
+grpcio==1.68.1
+grpcio-tools==1.68.1
+protobuf==5.29.1
 
 # Configuration
 pyyaml==6.0.2
