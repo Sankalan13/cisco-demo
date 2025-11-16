@@ -48,9 +48,9 @@ class CurrencyServiceClient(BaseGrpcClient):
         Raises:
             grpc.RpcError: If the gRPC call fails
         """
+        # Use dictionary unpacking to work around 'from' being a reserved keyword
         request = demo_pb2.CurrencyConversionRequest(
-            from_=from_amount,
-            to_code=to_code
+            **{'from': from_amount, 'to_code': to_code}
         )
         logger.info(f"Calling Convert(from={from_amount.currency_code}, to={to_code})")
         response = self.stub.Convert(request, timeout=self.timeout)

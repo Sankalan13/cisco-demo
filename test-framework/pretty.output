@@ -1,3 +1,627 @@
+Feature: Advertisement Display # features/advertisement_display.feature:1
+  As a system
+  I want to display contextual advertisements
+  So that users see relevant ads based on their browsing context
+  Background:   # features/advertisement_display.feature:6
+
+  Scenario: Get ads with single context keyword         # features/advertisement_display.feature:9
+    Given the microservices are healthy and running     # features/steps/common_steps.py:12
+    When I request ads with context keywords "clothing" # features/steps/ad_steps.py:22
+    Then I should receive advertisements                # features/steps/ad_steps.py:43
+    And the ads should be relevant to the context       # features/steps/ad_steps.py:53
+
+  Scenario: Get ads with multiple context keywords                          # features/advertisement_display.feature:14
+    Given the microservices are healthy and running                         # features/steps/common_steps.py:12
+    When I request ads with context keywords "clothing,accessories,fashion" # features/steps/ad_steps.py:22
+    Then I should receive advertisements                                    # features/steps/ad_steps.py:43
+    And the ads should be relevant to the context                           # features/steps/ad_steps.py:53
+
+  Scenario: Get ads with technology context                       # features/advertisement_display.feature:19
+    Given the microservices are healthy and running               # features/steps/common_steps.py:12
+    When I request ads with context keywords "technology,gadgets" # features/steps/ad_steps.py:22
+    Then I should receive advertisements                          # features/steps/ad_steps.py:43
+    And the ads should be relevant to the context                 # features/steps/ad_steps.py:53
+
+  Scenario: Get ads with home goods context                       # features/advertisement_display.feature:24
+    Given the microservices are healthy and running               # features/steps/common_steps.py:12
+    When I request ads with context keywords "home,kitchen,decor" # features/steps/ad_steps.py:22
+    Then I should receive advertisements                          # features/steps/ad_steps.py:43
+    And the ads should be relevant to the context                 # features/steps/ad_steps.py:53
+
+  Scenario: Get ads with empty context              # features/advertisement_display.feature:29
+    Given the microservices are healthy and running # features/steps/common_steps.py:12
+    When I request ads with context keywords ""     # features/steps/ad_steps.py:22
+    Then I should receive advertisements            # features/steps/ad_steps.py:43
+
+  Scenario: Get ads multiple times for same context     # features/advertisement_display.feature:33
+    Given the microservices are healthy and running     # features/steps/common_steps.py:12
+    When I request ads with context keywords "clothing" # features/steps/ad_steps.py:22
+    And I request ads with context keywords "clothing"  # features/steps/ad_steps.py:22
+    And I request ads with context keywords "clothing"  # features/steps/ad_steps.py:22
+    Then I should receive advertisements                # features/steps/ad_steps.py:43
+    And the ads should be relevant to the context       # features/steps/ad_steps.py:53
+
+  Scenario: Get ads with different contexts sequentially  # features/advertisement_display.feature:40
+    Given the microservices are healthy and running       # features/steps/common_steps.py:12
+    When I request ads with context keywords "clothing"   # features/steps/ad_steps.py:22
+    Then I should receive advertisements                  # features/steps/ad_steps.py:43
+    When I request ads with context keywords "technology" # features/steps/ad_steps.py:22
+    Then I should receive advertisements                  # features/steps/ad_steps.py:43
+    When I request ads with context keywords "home"       # features/steps/ad_steps.py:22
+    Then I should receive advertisements                  # features/steps/ad_steps.py:43
+
+Feature: Cart Operations # features/cart_operations.feature:1
+  As a customer
+  I want to manage items in my shopping cart
+  So that I can control what I purchase
+  Background:   # features/cart_operations.feature:6
+
+  Scenario: Add multiple different items to cart               # features/cart_operations.feature:9
+    Given the microservices are healthy and running            # features/steps/common_steps.py:12
+    Given I have a unique user ID                              # features/steps/common_steps.py:58
+    When I add product "OLJCESPC7Z" to my cart with quantity 2 # features/steps/common_steps.py:65
+    And I add product "66VCHSJNUP" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I add product "9SIQT8TOJO" to my cart with quantity 3  # features/steps/common_steps.py:65
+    And I retrieve my cart contents                            # features/steps/cart_steps.py:42
+    Then my cart should contain 3 items                        # features/steps/cart_steps.py:56
+    And the cart should have all added products                # features/steps/cart_steps.py:109
+
+  Scenario: Add same item multiple times                       # features/cart_operations.feature:18
+    Given the microservices are healthy and running            # features/steps/common_steps.py:12
+    Given I have a unique user ID                              # features/steps/common_steps.py:58
+    When I add product "OLJCESPC7Z" to my cart with quantity 1 # features/steps/common_steps.py:65
+    And I add product "OLJCESPC7Z" to my cart with quantity 2  # features/steps/common_steps.py:65
+    And I retrieve my cart contents                            # features/steps/cart_steps.py:42
+    Then my cart should contain 1 items                        # features/steps/cart_steps.py:56
+    And the product "OLJCESPC7Z" should have quantity 3        # features/steps/cart_steps.py:119
+
+  Scenario: Empty cart after adding items                      # features/cart_operations.feature:26
+    Given the microservices are healthy and running            # features/steps/common_steps.py:12
+    Given I have a unique user ID                              # features/steps/common_steps.py:58
+    When I add product "OLJCESPC7Z" to my cart with quantity 2 # features/steps/common_steps.py:65
+    And I add product "66VCHSJNUP" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I empty my cart                                        # features/steps/cart_steps.py:96
+    And I retrieve my cart contents                            # features/steps/cart_steps.py:42
+    Then my cart should contain 0 items                        # features/steps/cart_steps.py:56
+
+  Scenario: Get cart for new user returns empty cart  # features/cart_operations.feature:34
+    Given the microservices are healthy and running   # features/steps/common_steps.py:12
+    Given I have a unique user ID                     # features/steps/common_steps.py:58
+    When I retrieve my cart contents                  # features/steps/cart_steps.py:42
+    Then my cart should contain 0 items               # features/steps/cart_steps.py:56
+
+  Scenario: Cart persistence across multiple operations        # features/cart_operations.feature:39
+    Given the microservices are healthy and running            # features/steps/common_steps.py:12
+    Given I have a unique user ID                              # features/steps/common_steps.py:58
+    When I add product "OLJCESPC7Z" to my cart with quantity 1 # features/steps/common_steps.py:65
+    And I retrieve my cart contents                            # features/steps/cart_steps.py:42
+    Then my cart should contain 1 items                        # features/steps/cart_steps.py:56
+    When I add product "66VCHSJNUP" to my cart with quantity 2 # features/steps/common_steps.py:65
+    And I retrieve my cart contents                            # features/steps/cart_steps.py:42
+    Then my cart should contain 2 items                        # features/steps/cart_steps.py:56
+    When I add product "1YMWWN1N4O" to my cart with quantity 1 # features/steps/common_steps.py:65
+    And I retrieve my cart contents                            # features/steps/cart_steps.py:42
+    Then my cart should contain 3 items                        # features/steps/cart_steps.py:56
+
+  Scenario: Add items with large quantities                     # features/cart_operations.feature:51
+    Given the microservices are healthy and running             # features/steps/common_steps.py:12
+    Given I have a unique user ID                               # features/steps/common_steps.py:58
+    When I add product "OLJCESPC7Z" to my cart with quantity 10 # features/steps/common_steps.py:65
+    And I add product "66VCHSJNUP" to my cart with quantity 20  # features/steps/common_steps.py:65
+    And I retrieve my cart contents                             # features/steps/cart_steps.py:42
+    Then my cart should contain 2 items                         # features/steps/cart_steps.py:56
+    And the product "OLJCESPC7Z" should have quantity 10        # features/steps/cart_steps.py:119
+    And the product "66VCHSJNUP" should have quantity 20        # features/steps/cart_steps.py:119
+
+  Scenario: Verify cart contains correct product IDs           # features/cart_operations.feature:60
+    Given the microservices are healthy and running            # features/steps/common_steps.py:12
+    Given I have a unique user ID                              # features/steps/common_steps.py:58
+    When I add product "L9ECAV7KIM" to my cart with quantity 1 # features/steps/common_steps.py:65
+    And I add product "2ZYFJ3GM2N" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I add product "0PUK6V6EV0" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I retrieve my cart contents                            # features/steps/cart_steps.py:42
+    Then my cart should contain 3 items                        # features/steps/cart_steps.py:56
+    And the cart should contain product "L9ECAV7KIM"           # features/steps/cart_steps.py:138
+    And the cart should contain product "2ZYFJ3GM2N"           # features/steps/cart_steps.py:138
+    And the cart should contain product "0PUK6V6EV0"           # features/steps/cart_steps.py:138
+
+Feature: Checkout and Payment Flow # features/checkout_flow.feature:1
+  As a customer
+  I want to complete the checkout process
+  So that I can purchase items in my cart
+  Background:   # features/checkout_flow.feature:6
+
+  Scenario: Complete end-to-end checkout with payment         # features/checkout_flow.feature:9
+    Given the microservices are healthy and running           # features/steps/common_steps.py:12
+    Given I have a unique user ID                             # features/steps/common_steps.py:58
+    And I add product "OLJCESPC7Z" to my cart with quantity 2 # features/steps/common_steps.py:65
+    And I add product "66VCHSJNUP" to my cart with quantity 1 # features/steps/common_steps.py:65
+    When I place an order with the following details          # features/steps/checkout_steps.py:12
+      | field          | value                     |
+      | email          | test@example.com          |
+      | street_address | 1600 Amphitheatre Parkway |
+      | city           | Mountain View             |
+      | state          | CA                        |
+      | country        | United States             |
+      | zip_code       | 94043                     |
+      | card_number    | 4432-8015-6152-0454       |
+      | card_cvv       | 672                       |
+      | card_exp_month | 1                         |
+      | card_exp_year  | 2030                      |
+      | currency_code  | USD                       |
+    Then the order should be placed successfully              # features/steps/checkout_steps.py:127
+    And I should receive an order ID                          # features/steps/checkout_steps.py:137
+    And I should receive a shipping tracking ID               # features/steps/checkout_steps.py:162
+    And my cart should be empty                               # features/steps/checkout_steps.py:172
+
+  Scenario: Multi-item checkout with currency conversion                           # features/checkout_flow.feature:31
+    Given the microservices are healthy and running                                # features/steps/common_steps.py:12
+    Given I have a unique user ID                                                  # features/steps/common_steps.py:58
+    And I add product "OLJCESPC7Z" to my cart with quantity 1                      # features/steps/common_steps.py:65
+    And I add product "9SIQT8TOJO" to my cart with quantity 2                      # features/steps/common_steps.py:65
+    When I place an order with EUR currency and valid shipping and payment details # features/steps/checkout_steps.py:56
+    Then the order should be placed successfully                                   # features/steps/checkout_steps.py:127
+    And I should receive an order ID in EUR                                        # features/steps/checkout_steps.py:147
+    And I should receive a shipping tracking ID                                    # features/steps/checkout_steps.py:162
+    And the total cost should be in EUR                                            # features/steps/checkout_steps.py:182
+
+  Scenario: Checkout with single item                                 # features/checkout_flow.feature:41
+    Given the microservices are healthy and running                   # features/steps/common_steps.py:12
+    Given I have a unique user ID                                     # features/steps/common_steps.py:58
+    And I add product "66VCHSJNUP" to my cart with quantity 1         # features/steps/common_steps.py:65
+    When I place an order with valid payment and shipping information # features/steps/checkout_steps.py:92
+    Then the order should be placed successfully                      # features/steps/checkout_steps.py:127
+    And I should receive an order ID                                  # features/steps/checkout_steps.py:137
+    And I should receive a shipping tracking ID                       # features/steps/checkout_steps.py:162
+    And my cart should be empty                                       # features/steps/checkout_steps.py:172
+
+Feature: Cross-Service Integration # features/cross_service_integration.feature:1
+  As a system
+  I want services to work together seamlessly
+  So that complex workflows function correctly
+  Background:   # features/cross_service_integration.feature:6
+
+  Scenario: End-to-end flow with all services                  # features/cross_service_integration.feature:9
+    Given the microservices are healthy and running            # features/steps/common_steps.py:12
+    Given I have a unique user ID                              # features/steps/common_steps.py:58
+    When I search for products with keyword "watch"            # features/steps/product_search_steps.py:5
+    Then I should receive search results                       # features/steps/product_search_steps.py:33
+    When I add product "OLJCESPC7Z" to my cart with quantity 2 # features/steps/common_steps.py:65
+    And I retrieve my cart contents                            # features/steps/cart_steps.py:42
+    Then my cart should contain 1 items                        # features/steps/cart_steps.py:56
+    When I request a shipping quote for the following address  # features/steps/shipping_steps.py:34
+      | field          | value                     |
+      | street_address | 1600 Amphitheatre Parkway |
+      | city           | Mountain View             |
+      | state          | CA                        |
+      | country        | United States             |
+      | zip_code       | 94043                     |
+    Then I should receive a shipping quote                     # features/steps/shipping_steps.py:64
+    When I convert 100 "USD" to "EUR"                          # features/steps/currency_steps.py:25
+    Then I should receive a valid conversion result            # features/steps/currency_steps.py:75
+    When I charge 50.00 "USD" with valid credit card           # features/steps/payment_steps.py:11
+    Then the payment should be successful                      # features/steps/payment_steps.py:75
+    When I request ads with context keywords "clothing"        # features/steps/ad_steps.py:22
+    Then I should receive advertisements                       # features/steps/ad_steps.py:43
+
+  Scenario: Currency conversion affects order pricing          # features/cross_service_integration.feature:37
+    Given the microservices are healthy and running            # features/steps/common_steps.py:12
+    Given I have a unique user ID                              # features/steps/common_steps.py:58
+    When I add product "66VCHSJNUP" to my cart with quantity 1 # features/steps/common_steps.py:65
+    And I retrieve my cart contents                            # features/steps/cart_steps.py:42
+    Then my cart should contain 1 items                        # features/steps/cart_steps.py:56
+    When I request a shipping quote for the following address  # features/steps/shipping_steps.py:34
+      | field          | value                     |
+      | street_address | 1600 Amphitheatre Parkway |
+      | city           | Mountain View             |
+      | state          | CA                        |
+      | country        | United States             |
+      | zip_code       | 94043                     |
+    Then I should receive a shipping quote                     # features/steps/shipping_steps.py:64
+    When I request the list of supported currencies            # features/steps/currency_steps.py:11
+    Then the list should contain "EUR"                         # features/steps/currency_steps.py:67
+    When I convert 100 "USD" to "EUR"                          # features/steps/currency_steps.py:25
+    Then the converted amount should be in "EUR"               # features/steps/currency_steps.py:84
+
+  Scenario: Product recommendations with ads and cart           # features/cross_service_integration.feature:57
+    Given the microservices are healthy and running             # features/steps/common_steps.py:12
+    Given I have a unique user ID                               # features/steps/common_steps.py:58
+    When I add product "OLJCESPC7Z" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I add product "66VCHSJNUP" to my cart with quantity 1   # features/steps/common_steps.py:65
+    And I get product recommendations                           # features/steps/recommendation_steps.py:31
+    Then I should receive product recommendations               # features/steps/recommendation_steps.py:52
+    When I request ads with context keywords "fashion,clothing" # features/steps/ad_steps.py:22
+    Then I should receive advertisements                        # features/steps/ad_steps.py:43
+
+  Scenario: Complete purchase workflow                        # features/cross_service_integration.feature:66
+    Given the microservices are healthy and running           # features/steps/common_steps.py:12
+    Given I have a unique user ID                             # features/steps/common_steps.py:58
+    When I search for products with keyword "kitchen"         # features/steps/product_search_steps.py:5
+    And I add product "2ZYFJ3GM2N" to my cart with quantity 1 # features/steps/common_steps.py:65
+    And I retrieve my cart contents                           # features/steps/cart_steps.py:42
+    Then my cart should contain 1 items                       # features/steps/cart_steps.py:56
+    When I request a shipping quote for the following address # features/steps/shipping_steps.py:34
+      | field          | value           |
+      | street_address | 123 Test Street |
+      | city           | Toronto         |
+      | state          | ON              |
+      | country        | Canada          |
+      | zip_code       | 12345           |
+    Then I should receive a shipping quote                    # features/steps/shipping_steps.py:64
+    When I charge 200.00 "USD" with valid credit card         # features/steps/payment_steps.py:11
+    Then the payment should be successful                     # features/steps/payment_steps.py:75
+    And I should receive a transaction ID                     # features/steps/payment_steps.py:83
+    When I ship an order to the following address             # features/steps/shipping_steps.py:133
+      | field          | value           |
+      | street_address | 123 Test Street |
+      | city           | Toronto         |
+      | state          | ON              |
+      | country        | Canada          |
+      | zip_code       | 12345           |
+    Then the order should be shipped successfully             # features/steps/shipping_steps.py:163
+    And I should receive a tracking ID                        # features/steps/shipping_steps.py:171
+
+  Scenario: Multi-currency shopping experience        # features/cross_service_integration.feature:97
+    Given the microservices are healthy and running   # features/steps/common_steps.py:12
+    Given I have a unique user ID                     # features/steps/common_steps.py:58
+    When I request the list of supported currencies   # features/steps/currency_steps.py:11
+    Then I should receive a list of currency codes    # features/steps/currency_steps.py:50
+    And the list should contain "USD"                 # features/steps/currency_steps.py:67
+    And the list should contain "EUR"                 # features/steps/currency_steps.py:67
+    When I convert 50 "USD" to "EUR"                  # features/steps/currency_steps.py:25
+    Then the converted amount should be in "EUR"      # features/steps/currency_steps.py:84
+    When I convert 100 "EUR" to "JPY"                 # features/steps/currency_steps.py:25
+    Then the converted amount should be in "JPY"      # features/steps/currency_steps.py:84
+    When I charge 100.00 "EUR" with valid credit card # features/steps/payment_steps.py:11
+    Then the payment should be successful             # features/steps/payment_steps.py:75
+    When I charge 5000 "JPY" with valid credit card   # features/steps/payment_steps.py:11
+    Then the payment should be successful             # features/steps/payment_steps.py:75
+
+  Scenario: Shopping with recommendations and shipping              # features/cross_service_integration.feature:115
+    Given the microservices are healthy and running                 # features/steps/common_steps.py:12
+    Given I have a unique user ID                                   # features/steps/common_steps.py:58
+    When I add product "OLJCESPC7Z" to my cart with quantity 1      # features/steps/common_steps.py:65
+    And I get product recommendations                               # features/steps/recommendation_steps.py:31
+    Then I should receive product recommendations                   # features/steps/recommendation_steps.py:52
+    When I request ads with context keywords "clothing,accessories" # features/steps/ad_steps.py:22
+    Then I should receive advertisements                            # features/steps/ad_steps.py:43
+    When I request a shipping quote for the following address       # features/steps/shipping_steps.py:34
+      | field          | value                     |
+      | street_address | 1600 Amphitheatre Parkway |
+      | city           | Mountain View             |
+      | state          | CA                        |
+      | country        | United States             |
+      | zip_code       | 94043                     |
+    Then I should receive a shipping quote                          # features/steps/shipping_steps.py:64
+    And the quote should have a valid cost                          # features/steps/shipping_steps.py:72
+
+Feature: Currency Operations # features/currency_operations.feature:1
+  As a system
+  I want to handle currency conversions
+  So that users can view prices in their preferred currency
+  Background:   # features/currency_operations.feature:6
+
+  Scenario: Get list of supported currencies          # features/currency_operations.feature:9
+    Given the microservices are healthy and running   # features/steps/common_steps.py:12
+    When I request the list of supported currencies   # features/steps/currency_steps.py:11
+    Then I should receive a list of currency codes    # features/steps/currency_steps.py:50
+    And the list should contain at least 5 currencies # features/steps/currency_steps.py:59
+
+  Scenario: Verify USD is in supported currencies list  # features/currency_operations.feature:14
+    Given the microservices are healthy and running     # features/steps/common_steps.py:12
+    When I request the list of supported currencies     # features/steps/currency_steps.py:11
+    Then the list should contain "USD"                  # features/steps/currency_steps.py:67
+
+  Scenario: Convert 100 USD to EUR                    # features/currency_operations.feature:18
+    Given the microservices are healthy and running   # features/steps/common_steps.py:12
+    When I convert 100 "USD" to "EUR"                 # features/steps/currency_steps.py:25
+    Then I should receive a valid conversion result   # features/steps/currency_steps.py:75
+    And the converted amount should be in "EUR"       # features/steps/currency_steps.py:84
+    And the converted amount should be greater than 0 # features/steps/currency_steps.py:92
+
+  Scenario: Convert 50 EUR to JPY                     # features/currency_operations.feature:24
+    Given the microservices are healthy and running   # features/steps/common_steps.py:12
+    When I convert 50 "EUR" to "JPY"                  # features/steps/currency_steps.py:25
+    Then I should receive a valid conversion result   # features/steps/currency_steps.py:75
+    And the converted amount should be in "JPY"       # features/steps/currency_steps.py:84
+    And the converted amount should be greater than 0 # features/steps/currency_steps.py:92
+
+  Scenario: Convert 200 USD to CAD                    # features/currency_operations.feature:30
+    Given the microservices are healthy and running   # features/steps/common_steps.py:12
+    When I convert 200 "USD" to "CAD"                 # features/steps/currency_steps.py:25
+    Then I should receive a valid conversion result   # features/steps/currency_steps.py:75
+    And the converted amount should be in "CAD"       # features/steps/currency_steps.py:84
+    And the converted amount should be greater than 0 # features/steps/currency_steps.py:92
+
+  Scenario: Convert same currency returns same amount  # features/currency_operations.feature:36
+    Given the microservices are healthy and running    # features/steps/common_steps.py:12
+    When I convert 100 "USD" to "USD"                  # features/steps/currency_steps.py:25
+    Then I should receive a valid conversion result    # features/steps/currency_steps.py:75
+    And the converted amount should be in "USD"        # features/steps/currency_steps.py:84
+    And the converted amount should equal 100 units    # features/steps/currency_steps.py:101
+
+  Scenario: Convert with decimal amounts              # features/currency_operations.feature:42
+    Given the microservices are healthy and running   # features/steps/common_steps.py:12
+    When I convert 99.99 "USD" to "EUR"               # features/steps/currency_steps.py:25
+    Then I should receive a valid conversion result   # features/steps/currency_steps.py:75
+    And the converted amount should be in "EUR"       # features/steps/currency_steps.py:84
+    And the converted amount should be greater than 0 # features/steps/currency_steps.py:92
+
+Feature: Edge Cases and Boundary Conditions # features/edge_cases.feature:1
+  As a system
+  I want to handle edge cases correctly
+  So that the system remains stable under unusual conditions
+  Background:   # features/edge_cases.feature:6
+
+  Scenario: Add maximum realistic quantity to cart               # features/edge_cases.feature:9
+    Given the microservices are healthy and running              # features/steps/common_steps.py:12
+    Given I have a unique user ID                                # features/steps/common_steps.py:58
+    When I add product "OLJCESPC7Z" to my cart with quantity 100 # features/steps/common_steps.py:65
+    And I retrieve my cart contents                              # features/steps/cart_steps.py:42
+    Then my cart should contain 1 items                          # features/steps/cart_steps.py:56
+    And the product "OLJCESPC7Z" should have quantity 100        # features/steps/cart_steps.py:119
+
+  Scenario: Search with special characters          # features/edge_cases.feature:16
+    Given the microservices are healthy and running # features/steps/common_steps.py:12
+    When I search for products with keyword "!@#$%" # features/steps/product_search_steps.py:5
+    Then I should receive an empty result set       # features/steps/product_search_steps.py:70
+
+  Scenario: Get cart for user with very long ID                                                                      # features/edge_cases.feature:20
+    Given the microservices are healthy and running                                                                  # features/steps/common_steps.py:12
+    Given I have a user ID "user_with_very_long_id_1234567890_abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ" # features/steps/edge_case_steps.py:10
+    When I retrieve my cart contents                                                                                 # features/steps/cart_steps.py:42
+    Then my cart should contain 0 items                                                                              # features/steps/cart_steps.py:56
+
+  Scenario: Add all available products to single cart          # features/edge_cases.feature:25
+    Given the microservices are healthy and running            # features/steps/common_steps.py:12
+    Given I have a unique user ID                              # features/steps/common_steps.py:58
+    When I add product "OLJCESPC7Z" to my cart with quantity 1 # features/steps/common_steps.py:65
+    And I add product "66VCHSJNUP" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I add product "1YMWWN1N4O" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I add product "L9ECAV7KIM" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I add product "2ZYFJ3GM2N" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I add product "0PUK6V6EV0" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I add product "LS4PSXUNUM" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I add product "9SIQT8TOJO" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I add product "6E92ZMYYFZ" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I retrieve my cart contents                            # features/steps/cart_steps.py:42
+    Then my cart should contain 9 items                        # features/steps/cart_steps.py:56
+
+  Scenario: Empty cart multiple times                          # features/edge_cases.feature:39
+    Given the microservices are healthy and running            # features/steps/common_steps.py:12
+    Given I have a unique user ID                              # features/steps/common_steps.py:58
+    When I add product "OLJCESPC7Z" to my cart with quantity 1 # features/steps/common_steps.py:65
+    And I empty my cart                                        # features/steps/cart_steps.py:96
+    And I empty my cart                                        # features/steps/cart_steps.py:96
+    And I empty my cart                                        # features/steps/cart_steps.py:96
+    And I retrieve my cart contents                            # features/steps/cart_steps.py:42
+    Then my cart should contain 0 items                        # features/steps/cart_steps.py:56
+
+  Scenario: Get recommendations with maximum cart size         # features/edge_cases.feature:48
+    Given the microservices are healthy and running            # features/steps/common_steps.py:12
+    Given I have a unique user ID                              # features/steps/common_steps.py:58
+    When I add product "OLJCESPC7Z" to my cart with quantity 1 # features/steps/common_steps.py:65
+    And I add product "66VCHSJNUP" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I add product "1YMWWN1N4O" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I add product "L9ECAV7KIM" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I add product "2ZYFJ3GM2N" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I get product recommendations                          # features/steps/recommendation_steps.py:31
+    Then I should receive product recommendations              # features/steps/recommendation_steps.py:52
+
+  Scenario: Checkout with international address                # features/edge_cases.feature:58
+    Given the microservices are healthy and running            # features/steps/common_steps.py:12
+    Given I have a unique user ID                              # features/steps/common_steps.py:58
+    When I add product "OLJCESPC7Z" to my cart with quantity 1 # features/steps/common_steps.py:65
+    And I request a shipping quote for the following address   # features/steps/shipping_steps.py:34
+      | field          | value             |
+      | street_address | 221B Baker Street |
+      | city           | London            |
+      | state          | England           |
+      | country        | United Kingdom    |
+      | zip_code       | 12345             |
+    Then I should receive a shipping quote                     # features/steps/shipping_steps.py:64
+    And the quote should have a valid cost                     # features/steps/shipping_steps.py:72
+
+  Scenario: Search with single character            # features/edge_cases.feature:71
+    Given the microservices are healthy and running # features/steps/common_steps.py:12
+    When I search for products with keyword "a"     # features/steps/product_search_steps.py:5
+    Then I should receive search results            # features/steps/product_search_steps.py:33
+
+  Scenario: Multiple concurrent operations on same cart        # features/edge_cases.feature:75
+    Given the microservices are healthy and running            # features/steps/common_steps.py:12
+    Given I have a unique user ID                              # features/steps/common_steps.py:58
+    When I add product "OLJCESPC7Z" to my cart with quantity 1 # features/steps/common_steps.py:65
+    And I retrieve my cart contents                            # features/steps/cart_steps.py:42
+    And I add product "66VCHSJNUP" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I retrieve my cart contents                            # features/steps/cart_steps.py:42
+    And I add product "9SIQT8TOJO" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I retrieve my cart contents                            # features/steps/cart_steps.py:42
+    Then my cart should contain 3 items                        # features/steps/cart_steps.py:56
+
+  Scenario: Get product details for all products    # features/edge_cases.feature:85
+    Given the microservices are healthy and running # features/steps/common_steps.py:12
+    When I get product details for "OLJCESPC7Z"     # features/steps/edge_case_steps.py:17
+    Then the product should have valid details      # features/steps/edge_case_steps.py:31
+    When I get product details for "66VCHSJNUP"     # features/steps/edge_case_steps.py:17
+    Then the product should have valid details      # features/steps/edge_case_steps.py:31
+    When I get product details for "9SIQT8TOJO"     # features/steps/edge_case_steps.py:17
+    Then the product should have valid details      # features/steps/edge_case_steps.py:31
+
+Feature: Error Handling # features/error_handling.feature:1
+  As a system
+  I want to handle errors gracefully
+  So that users receive meaningful error messages
+  Background:   # features/error_handling.feature:6
+
+  Scenario: Get non-existent product returns error     # features/error_handling.feature:9
+    Given the microservices are healthy and running    # features/steps/common_steps.py:12
+    When I try to get product with ID "NONEXISTENT123" # features/steps/error_steps.py:11
+    Then I should receive a product not found error    # features/steps/error_steps.py:172
+
+  Scenario: Checkout with invalid credit card                                   # features/error_handling.feature:13
+    Given the microservices are healthy and running                             # features/steps/common_steps.py:12
+    Given I have a unique user ID                                               # features/steps/common_steps.py:58
+    And I add product "OLJCESPC7Z" to my cart with quantity 1                   # features/steps/common_steps.py:65
+    When I try to place an order with invalid credit card "0000-0000-0000-0000" # features/steps/error_steps.py:42
+    Then I should receive a payment error                                       # features/steps/error_steps.py:191
+
+  Scenario: Checkout with expired credit card                       # features/error_handling.feature:19
+    Given the microservices are healthy and running                 # features/steps/common_steps.py:12
+    Given I have a unique user ID                                   # features/steps/common_steps.py:58
+    And I add product "OLJCESPC7Z" to my cart with quantity 1       # features/steps/common_steps.py:65
+    When I try to place an order with expired credit card year 2020 # features/steps/error_steps.py:77
+    Then I should receive a credit card expired error               # features/steps/error_steps.py:201
+
+  Scenario: Service handles invalid product gracefully                 # features/error_handling.feature:25
+    Given the microservices are healthy and running                    # features/steps/common_steps.py:12
+    Given I have a unique user ID                                      # features/steps/common_steps.py:58
+    When I add product "INVALID_PRODUCT_ID" to my cart with quantity 1 # features/steps/common_steps.py:65
+    And I retrieve my cart contents                                    # features/steps/cart_steps.py:42
+    Then my cart should contain 1 items                                # features/steps/cart_steps.py:56
+
+  Scenario: Service handles negative quantity gracefully        # features/error_handling.feature:31
+    Given the microservices are healthy and running             # features/steps/common_steps.py:12
+    Given I have a unique user ID                               # features/steps/common_steps.py:58
+    When I add product "OLJCESPC7Z" to my cart with quantity -5 # features/steps/common_steps.py:65
+    And I retrieve my cart contents                             # features/steps/cart_steps.py:42
+    Then my cart should contain 1 items                         # features/steps/cart_steps.py:56
+
+  Scenario: Service handles empty cart checkout gracefully            # features/error_handling.feature:37
+    Given the microservices are healthy and running                   # features/steps/common_steps.py:12
+    Given I have a unique user ID                                     # features/steps/common_steps.py:58
+    When I place an order with valid payment and shipping information # features/steps/checkout_steps.py:92
+    Then the order should be placed successfully                      # features/steps/checkout_steps.py:127
+
+  Scenario: Service handles empty city in shipping address    # features/error_handling.feature:42
+    Given the microservices are healthy and running           # features/steps/common_steps.py:12
+    Given I have a unique user ID                             # features/steps/common_steps.py:58
+    And I add product "OLJCESPC7Z" to my cart with quantity 1 # features/steps/common_steps.py:65
+    When I request a shipping quote for the following address # features/steps/shipping_steps.py:34
+      | field          | value         |
+      | street_address | 123 Test St   |
+      | city           |               |
+      | state          | CA            |
+      | country        | United States |
+      | zip_code       | 12345         |
+    Then I should receive a shipping quote                    # features/steps/shipping_steps.py:64
+
+Feature: Multi-Item Scenarios # features/multi_item_scenarios.feature:1
+  As a customer
+  I want to work with multiple items across different services
+  So that I can complete complex shopping workflows
+  Background:   # features/multi_item_scenarios.feature:6
+
+  Scenario: Get product recommendations and add to cart                    # features/multi_item_scenarios.feature:9
+    Given the microservices are healthy and running                        # features/steps/common_steps.py:12
+    Given I have a unique user ID                                          # features/steps/common_steps.py:58
+    When I add product "OLJCESPC7Z" to my cart with quantity 1             # features/steps/common_steps.py:65
+    And I get product recommendations                                      # features/steps/recommendation_steps.py:31
+    Then I should receive product recommendations                          # features/steps/recommendation_steps.py:52
+    And the recommendations should not include products already in my cart # features/steps/recommendation_steps.py:63
+
+  Scenario: Calculate shipping for cart with multiple items    # features/multi_item_scenarios.feature:16
+    Given the microservices are healthy and running            # features/steps/common_steps.py:12
+    Given I have a unique user ID                              # features/steps/common_steps.py:58
+    When I add product "OLJCESPC7Z" to my cart with quantity 2 # features/steps/common_steps.py:65
+    And I add product "66VCHSJNUP" to my cart with quantity 3  # features/steps/common_steps.py:65
+    And I add product "9SIQT8TOJO" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I request a shipping quote for the following address   # features/steps/shipping_steps.py:34
+      | field          | value                     |
+      | street_address | 1600 Amphitheatre Parkway |
+      | city           | Mountain View             |
+      | state          | CA                        |
+      | country        | United States             |
+      | zip_code       | 94043                     |
+    Then I should receive a shipping quote                     # features/steps/shipping_steps.py:64
+    And the quote should have a valid cost                     # features/steps/shipping_steps.py:72
+
+  Scenario: Browse products, add to cart, and checkout                # features/multi_item_scenarios.feature:31
+    Given the microservices are healthy and running                   # features/steps/common_steps.py:12
+    Given I have a unique user ID                                     # features/steps/common_steps.py:58
+    When I search for products with keyword "kitchen"                 # features/steps/product_search_steps.py:5
+    Then I should receive search results                              # features/steps/product_search_steps.py:33
+    When I add product "9SIQT8TOJO" to my cart with quantity 2        # features/steps/common_steps.py:65
+    And I add product "LS4PSXUNUM" to my cart with quantity 1         # features/steps/common_steps.py:65
+    And I retrieve my cart contents                                   # features/steps/cart_steps.py:42
+    Then my cart should contain 2 items                               # features/steps/cart_steps.py:56
+    When I place an order with valid payment and shipping information # features/steps/checkout_steps.py:92
+    Then the order should be placed successfully                      # features/steps/checkout_steps.py:127
+    And I should receive an order ID                                  # features/steps/checkout_steps.py:137
+    And my cart should be empty                                       # features/steps/checkout_steps.py:172
+
+  Scenario: Add all product categories to cart                 # features/multi_item_scenarios.feature:44
+    Given the microservices are healthy and running            # features/steps/common_steps.py:12
+    Given I have a unique user ID                              # features/steps/common_steps.py:58
+    When I add product "OLJCESPC7Z" to my cart with quantity 1 # features/steps/common_steps.py:65
+    And I add product "66VCHSJNUP" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I add product "L9ECAV7KIM" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I add product "2ZYFJ3GM2N" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I add product "9SIQT8TOJO" to my cart with quantity 1  # features/steps/common_steps.py:65
+    And I retrieve my cart contents                            # features/steps/cart_steps.py:42
+    Then my cart should contain 5 items                        # features/steps/cart_steps.py:56
+
+  Scenario: Get recommendations for empty cart      # features/multi_item_scenarios.feature:54
+    Given the microservices are healthy and running # features/steps/common_steps.py:12
+    Given I have a unique user ID                   # features/steps/common_steps.py:58
+    When I get product recommendations              # features/steps/recommendation_steps.py:31
+    Then I should receive product recommendations   # features/steps/recommendation_steps.py:52
+
+Feature: Payment Processing # features/payment_processing.feature:1
+  As a system
+  I want to process payments securely
+  So that customer transactions are handled correctly
+  Background:   # features/payment_processing.feature:6
+
+  Scenario: Charge valid credit card with USD        # features/payment_processing.feature:9
+    Given the microservices are healthy and running  # features/steps/common_steps.py:12
+    When I charge 50.00 "USD" with valid credit card # features/steps/payment_steps.py:11
+    Then the payment should be successful            # features/steps/payment_steps.py:75
+    And I should receive a transaction ID            # features/steps/payment_steps.py:83
+
+  Scenario: Charge valid credit card with EUR         # features/payment_processing.feature:14
+    Given the microservices are healthy and running   # features/steps/common_steps.py:12
+    When I charge 100.00 "EUR" with valid credit card # features/steps/payment_steps.py:11
+    Then the payment should be successful             # features/steps/payment_steps.py:75
+    And I should receive a transaction ID             # features/steps/payment_steps.py:83
+
+  Scenario: Charge valid credit card with JPY       # features/payment_processing.feature:19
+    Given the microservices are healthy and running # features/steps/common_steps.py:12
+    When I charge 5000 "JPY" with valid credit card # features/steps/payment_steps.py:11
+    Then the payment should be successful           # features/steps/payment_steps.py:75
+    And I should receive a transaction ID           # features/steps/payment_steps.py:83
+
+  Scenario: Charge small amount (1 USD)             # features/payment_processing.feature:24
+    Given the microservices are healthy and running # features/steps/common_steps.py:12
+    When I charge 1.00 "USD" with valid credit card # features/steps/payment_steps.py:11
+    Then the payment should be successful           # features/steps/payment_steps.py:75
+    And I should receive a transaction ID           # features/steps/payment_steps.py:83
+
+  Scenario: Charge large amount (1000 USD)             # features/payment_processing.feature:29
+    Given the microservices are healthy and running    # features/steps/common_steps.py:12
+    When I charge 1000.00 "USD" with valid credit card # features/steps/payment_steps.py:11
+    Then the payment should be successful              # features/steps/payment_steps.py:75
+    And I should receive a transaction ID              # features/steps/payment_steps.py:83
+
+  Scenario: Charge with decimal cents (99.99 USD)    # features/payment_processing.feature:34
+    Given the microservices are healthy and running  # features/steps/common_steps.py:12
+    When I charge 99.99 "USD" with valid credit card # features/steps/payment_steps.py:11
+    Then the payment should be successful            # features/steps/payment_steps.py:75
+    And I should receive a transaction ID            # features/steps/payment_steps.py:83
+
+  Scenario: Charge with different valid card number                         # features/payment_processing.feature:39
+    Given the microservices are healthy and running                         # features/steps/common_steps.py:12
+    When I charge 75.50 "USD" with credit card number "5555-5555-5555-4444" # features/steps/payment_steps.py:43
+    Then the payment should be successful                                   # features/steps/payment_steps.py:75
+    And I should receive a transaction ID                                   # features/steps/payment_steps.py:83
+
+  Scenario: Multiple successive charges              # features/payment_processing.feature:44
+    Given the microservices are healthy and running  # features/steps/common_steps.py:12
+    When I charge 10.00 "USD" with valid credit card # features/steps/payment_steps.py:11
+    And I charge 20.00 "USD" with valid credit card  # features/steps/payment_steps.py:11
+    And I charge 30.00 "USD" with valid credit card  # features/steps/payment_steps.py:11
+    Then the payment should be successful            # features/steps/payment_steps.py:75
+    And I should receive a transaction ID            # features/steps/payment_steps.py:83
+
 Feature: Product Browsing and Cart Management # features/product_browsing.feature:1
   As a customer
   I want to browse products and add them to my cart
@@ -14,5 +638,178 @@ Feature: Product Browsing and Cart Management # features/product_browsing.featur
     And the item quantity should be 2                             # features/steps/cart_steps.py:67
     And the product ID in the cart should match the added product # features/steps/cart_steps.py:81
     When I request recommendations based on my cart               # features/steps/recommendation_steps.py:10
-    Then I should receive product recommendations                 # features/steps/recommendation_steps.py:31
+    Then I should receive product recommendations                 # features/steps/recommendation_steps.py:52
+
+Feature: Product Search Functionality # features/product_search.feature:1
+  As a customer
+  I want to search for products
+  So that I can find items I'm interested in
+  Scenario: Search for products with valid keyword                  # features/product_search.feature:6
+    When I search for products with keyword "watch"                 # features/steps/product_search_steps.py:5
+    Then I should receive search results                            # features/steps/product_search_steps.py:33
+    And the results should contain products matching "watch"        # features/steps/product_search_steps.py:40
+    And all returned products should have valid product information # features/steps/product_search_steps.py:56
+
+  Scenario: Search with partial keyword match                # features/product_search.feature:12
+    When I search for products with keyword "glass"          # features/steps/product_search_steps.py:5
+    Then I should receive search results                     # features/steps/product_search_steps.py:33
+    And the results should contain products matching "glass" # features/steps/product_search_steps.py:40
+
+  Scenario: Case-insensitive search                               # features/product_search.feature:17
+    When I search for products with keyword "SUNGLASSES"          # features/steps/product_search_steps.py:5
+    Then I should receive search results                          # features/steps/product_search_steps.py:33
+    And the results should contain products matching "sunglasses" # features/steps/product_search_steps.py:40
+
+  Scenario: Search with no matching results                           # features/product_search.feature:22
+    When I search for products with keyword "nonexistentproduct12345" # features/steps/product_search_steps.py:5
+    Then I should receive an empty result set                         # features/steps/product_search_steps.py:70
+
+  Scenario: Search with empty string                 # features/product_search.feature:26
+    When I search for products with an empty keyword # features/steps/product_search_steps.py:19
+    Then I should receive all available products     # features/steps/product_search_steps.py:77
+
+  Scenario: Verify search results include complete product details  # features/product_search.feature:30
+    When I search for products with keyword "kitchen"               # features/steps/product_search_steps.py:5
+    Then I should receive search results                            # features/steps/product_search_steps.py:33
+    And each product should have the following fields               # features/steps/product_search_steps.py:91
+      | field       |
+      | id          |
+      | name        |
+      | description |
+      | picture     |
+      | price_usd   |
+      | categories  |
+
+Feature: Shipping Quote Calculation # features/shipping.feature:1
+  As a customer
+  I want to get shipping quotes
+  So that I know the shipping cost for my order
+  Scenario: Get shipping quote for domestic address           # features/shipping.feature:6
+    Given I have items in my cart                             # features/steps/shipping_steps.py:5
+    When I request a shipping quote for the following address # features/steps/shipping_steps.py:34
+      | field          | value                     |
+      | street_address | 1600 Amphitheatre Parkway |
+      | city           | Mountain View             |
+      | state          | CA                        |
+      | country        | United States             |
+      | zip_code       | 94043                     |
+    Then I should receive a shipping quote                    # features/steps/shipping_steps.py:64
+    And the quote should have a valid cost                    # features/steps/shipping_steps.py:72
+    And the quote should be in "USD" currency                 # features/steps/shipping_steps.py:81
+
+  Scenario: Get shipping quote for international address      # features/shipping.feature:19
+    Given I have items in my cart                             # features/steps/shipping_steps.py:5
+    When I request a shipping quote for the following address # features/steps/shipping_steps.py:34
+      | field          | value           |
+      | street_address | 123 Test Street |
+      | city           | Toronto         |
+      | state          | ON              |
+      | country        | Canada          |
+      | zip_code       | 12345           |
+    Then I should receive a shipping quote                    # features/steps/shipping_steps.py:64
+    And the quote should have a valid cost                    # features/steps/shipping_steps.py:72
+
+  Scenario: Shipping quote is consistent for same address      # features/shipping.feature:31
+    Given I have a unique user ID                              # features/steps/common_steps.py:58
+    And I add product "OLJCESPC7Z" to my cart with quantity 1  # features/steps/common_steps.py:65
+    When I request a shipping quote for the following address  # features/steps/shipping_steps.py:34
+      | field          | value                     |
+      | street_address | 1600 Amphitheatre Parkway |
+      | city           | Mountain View             |
+      | state          | CA                        |
+      | country        | United States             |
+      | zip_code       | 94043                     |
+    Then I should receive a shipping quote                     # features/steps/shipping_steps.py:64
+    And I store the shipping cost as "first_quote"             # features/steps/shipping_steps.py:88
+    When I add product "66VCHSJNUP" to my cart with quantity 2 # features/steps/common_steps.py:65
+    And I request a shipping quote for the following address   # features/steps/shipping_steps.py:34
+      | field          | value                     |
+      | street_address | 1600 Amphitheatre Parkway |
+      | city           | Mountain View             |
+      | state          | CA                        |
+      | country        | United States             |
+      | zip_code       | 94043                     |
+    Then I should receive a shipping quote                     # features/steps/shipping_steps.py:64
+    And the quote should have a valid cost                     # features/steps/shipping_steps.py:72
+
+  Scenario: Get shipping quote with empty cart                # features/shipping.feature:55
+    Given I have a unique user ID                             # features/steps/common_steps.py:58
+    And my cart is empty                                      # features/steps/shipping_steps.py:22
+    When I request a shipping quote for the following address # features/steps/shipping_steps.py:34
+      | field          | value                     |
+      | street_address | 1600 Amphitheatre Parkway |
+      | city           | Mountain View             |
+      | state          | CA                        |
+      | country        | United States             |
+      | zip_code       | 94043                     |
+    Then I should receive a shipping quote                    # features/steps/shipping_steps.py:64
+    And the quote should have a valid cost                    # features/steps/shipping_steps.py:72
+
+  Scenario: Verify shipping quote response structure          # features/shipping.feature:68
+    Given I have items in my cart                             # features/steps/shipping_steps.py:5
+    When I request a shipping quote for the following address # features/steps/shipping_steps.py:34
+      | field          | value                     |
+      | street_address | 1600 Amphitheatre Parkway |
+      | city           | Mountain View             |
+      | state          | CA                        |
+      | country        | United States             |
+      | zip_code       | 94043                     |
+    Then I should receive a shipping quote                    # features/steps/shipping_steps.py:64
+    And the quote should have a currency code                 # features/steps/shipping_steps.py:111
+    And the quote should have units                           # features/steps/shipping_steps.py:118
+    And the quote should have nanos                           # features/steps/shipping_steps.py:125
+
+  Scenario: Ship order to domestic address                    # features/shipping.feature:82
+    Given I have a unique user ID                             # features/steps/common_steps.py:58
+    And I add product "OLJCESPC7Z" to my cart with quantity 1 # features/steps/common_steps.py:65
+    When I ship an order to the following address             # features/steps/shipping_steps.py:133
+      | field          | value                     |
+      | street_address | 1600 Amphitheatre Parkway |
+      | city           | Mountain View             |
+      | state          | CA                        |
+      | country        | United States             |
+      | zip_code       | 94043                     |
+    Then the order should be shipped successfully             # features/steps/shipping_steps.py:163
+    And I should receive a tracking ID                        # features/steps/shipping_steps.py:171
+
+  Scenario: Ship order to international address               # features/shipping.feature:95
+    Given I have a unique user ID                             # features/steps/common_steps.py:58
+    And I add product "66VCHSJNUP" to my cart with quantity 2 # features/steps/common_steps.py:65
+    When I ship an order to the following address             # features/steps/shipping_steps.py:133
+      | field          | value           |
+      | street_address | 123 Test Street |
+      | city           | Toronto         |
+      | state          | ON              |
+      | country        | Canada          |
+      | zip_code       | 12345           |
+    Then the order should be shipped successfully             # features/steps/shipping_steps.py:163
+    And I should receive a tracking ID                        # features/steps/shipping_steps.py:171
+
+  Scenario: Ship order with multiple items                    # features/shipping.feature:108
+    Given I have a unique user ID                             # features/steps/common_steps.py:58
+    And I add product "OLJCESPC7Z" to my cart with quantity 1 # features/steps/common_steps.py:65
+    And I add product "66VCHSJNUP" to my cart with quantity 2 # features/steps/common_steps.py:65
+    And I add product "9SIQT8TOJO" to my cart with quantity 1 # features/steps/common_steps.py:65
+    When I ship an order to the following address             # features/steps/shipping_steps.py:133
+      | field          | value                     |
+      | street_address | 1600 Amphitheatre Parkway |
+      | city           | Mountain View             |
+      | state          | CA                        |
+      | country        | United States             |
+      | zip_code       | 94043                     |
+    Then the order should be shipped successfully             # features/steps/shipping_steps.py:163
+    And I should receive a tracking ID                        # features/steps/shipping_steps.py:171
+
+  Scenario: Ship order with empty cart            # features/shipping.feature:123
+    Given I have a unique user ID                 # features/steps/common_steps.py:58
+    And my cart is empty                          # features/steps/shipping_steps.py:22
+    When I ship an order to the following address # features/steps/shipping_steps.py:133
+      | field          | value                     |
+      | street_address | 1600 Amphitheatre Parkway |
+      | city           | Mountain View             |
+      | state          | CA                        |
+      | country        | United States             |
+      | zip_code       | 94043                     |
+    Then the order should be shipped successfully # features/steps/shipping_steps.py:163
+    And I should receive a tracking ID            # features/steps/shipping_steps.py:171
 
