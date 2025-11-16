@@ -10,3 +10,6 @@ logs/
 coverage/
 reports/
 *.log
+
+# Make build artifacts
+.build/

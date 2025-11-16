@@ -139,10 +139,14 @@ def before_all(context):
         context.tracer = None
 
     # Record test execution start time for coverage generation
-    context.test_start_time = datetime.now(timezone.utc)
+    # Add a buffer before actual test start to capture trace propagation
     logger.info("="*60)
     logger.info("Setting up test environment...")
     logger.info("="*60)
+    logger.info("Waiting 3 seconds before recording start time (trace buffer)...")
+    time.sleep(3)
+    context.test_start_time = datetime.now(timezone.utc)
+    logger.info(f"Test start time recorded: {context.test_start_time.isoformat()}")
 
     # Initialize gRPC clients
     logger.info("Initializing gRPC clients...")
@@ -324,8 +328,37 @@ def after_all(context):
     logger.info("Cleaning up test environment...")
     logger.info("="*60)
 
-    # Record test execution end time
+    # Flush OpenTelemetry spans before recording end time
+    # This ensures all spans are exported to the collector before tests end
+    logger.info("Flushing OpenTelemetry spans...")
+    try:
+        # Get the tracer provider and force flush all spans
+        from opentelemetry import trace as otel_trace
+        tracer_provider = otel_trace.get_tracer_provider()
+
+        # Force flush with timeout (give it up to 10 seconds to export all spans)
+        if hasattr(tracer_provider, 'force_flush'):
+            flush_success = tracer_provider.force_flush(timeout_millis=10000)
+            if flush_success:
+                logger.info("✓ All spans flushed successfully")
+            else:
+                logger.warning("⚠ Span flush timed out (some spans may not be exported)")
+        else:
+            logger.warning("TracerProvider does not support force_flush")
+
+        # Add delay to ensure spans reach Jaeger and are indexed
+        logger.info("Waiting 5 seconds for spans to reach Jaeger and be indexed...")
+        time.sleep(5)
+        logger.info("✓ Span export complete")
+
+    except Exception as e:
+        logger.warning(f"Error flushing OpenTelemetry spans: {e}")
+        logger.warning("Some spans may not be exported to Jaeger")
+
+    # Record test execution end time AFTER spans are flushed
+    # Add a buffer to ensure all traces are indexed in Jaeger
     context.test_end_time = datetime.now(timezone.utc)
+    logger.info(f"Test end time recorded: {context.test_end_time.isoformat()}")
 
     # Write test execution time window to file for coverage generation
     # This allows run_all.sh to know the exact time range to query
@@ -358,34 +391,6 @@ def after_all(context):
             logger.warning(f"Failed to save test execution time: {e}")
     else:
         logger.debug("Test execution time not available (before_all may have failed before recording start time)")
-
-    # Flush OpenTelemetry spans before shutting down
-    # This ensures all spans are exported to the collector before tests end
-    logger.info("Flushing OpenTelemetry spans...")
-    try:
-        # Get the tracer provider and force flush all spans
-        from opentelemetry import trace as otel_trace
-        tracer_provider = otel_trace.get_tracer_provider()
-
-        # Force flush with timeout (give it up to 10 seconds to export all spans)
-        if hasattr(tracer_provider, 'force_flush'):
-            flush_success = tracer_provider.force_flush(timeout_millis=10000)
-            if flush_success:
-                logger.info("✓ All spans flushed successfully")
-            else:
-                logger.warning("⚠ Span flush timed out (some spans may not be exported)")
-        else:
-            logger.warning("TracerProvider does not support force_flush")
-
-        # Add a small delay to ensure spans reach Jaeger
-        import time
-        logger.info("Waiting for spans to reach Jaeger...")
-        time.sleep(2)
-        logger.info("✓ Span export complete")
-
-    except Exception as e:
-        logger.warning(f"Error flushing OpenTelemetry spans: {e}")
-        logger.warning("Some spans may not be exported to Jaeger")
 
     # Close all gRPC client connections
     # Only close clients that were successfully initialized (before_all may have failed)
