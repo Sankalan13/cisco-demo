@@ -15,6 +15,7 @@ resources:
 
 # Override Node.js service images with locally-built versions containing OTel fixes
 # These images have updated @opentelemetry/sdk-trace-node and exporter packages
+# Override Go service images with coverage-instrumented versions
 images:
 - name: us-central1-docker.pkg.dev/google-samples/microservices-demo/currencyservice
   newName: currencyservice
@@ -22,9 +23,95 @@ images:
 - name: us-central1-docker.pkg.dev/google-samples/microservices-demo/paymentservice
   newName: paymentservice
   newTag: local-fixed
+- name: us-central1-docker.pkg.dev/google-samples/microservices-demo/productcatalogservice
+  newName: productcatalogservice
+  newTag: local-coverage
+- name: us-central1-docker.pkg.dev/google-samples/microservices-demo/checkoutservice
+  newName: checkoutservice
+  newTag: local-coverage
+- name: us-central1-docker.pkg.dev/google-samples/microservices-demo/shippingservice
+  newName: shippingservice
+  newTag: local-coverage
 
 # Strategic merge patches to add tracing environment variables to all services
 patches:
+# Go services: Add coverage environment variable and volume
+- patch: |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: productcatalogservice
+    spec:
+      template:
+        spec:
+          containers:
+          - name: server
+            env:
+            - name: GOCOVERDIR
+              value: "/coverage-data"
+            - name: ENABLE_TRACING
+              value: "1"
+            - name: COLLECTOR_SERVICE_ADDR
+              value: "opentelemetrycollector:4317"
+            - name: OTEL_SERVICE_NAME
+              value: "productcatalogservice"
+            volumeMounts:
+            - name: coverage-data
+              mountPath: /coverage-data
+          volumes:
+          - name: coverage-data
+            emptyDir: {}
+- patch: |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: checkoutservice
+    spec:
+      template:
+        spec:
+          containers:
+          - name: server
+            env:
+            - name: GOCOVERDIR
+              value: "/coverage-data"
+            - name: ENABLE_TRACING
+              value: "1"
+            - name: COLLECTOR_SERVICE_ADDR
+              value: "opentelemetrycollector:4317"
+            - name: OTEL_SERVICE_NAME
+              value: "checkoutservice"
+            volumeMounts:
+            - name: coverage-data
+              mountPath: /coverage-data
+          volumes:
+          - name: coverage-data
+            emptyDir: {}
+- patch: |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: shippingservice
+    spec:
+      template:
+        spec:
+          containers:
+          - name: server
+            env:
+            - name: GOCOVERDIR
+              value: "/coverage-data"
+            - name: ENABLE_TRACING
+              value: "1"
+            - name: COLLECTOR_SERVICE_ADDR
+              value: "opentelemetrycollector:4317"
+            - name: OTEL_SERVICE_NAME
+              value: "shippingservice"
+            volumeMounts:
+            - name: coverage-data
+              mountPath: /coverage-data
+          volumes:
+          - name: coverage-data
+            emptyDir: {}
+# Node.js and other services: Add tracing only
 - patch: |-
     apiVersion: apps/v1
     kind: Deployment

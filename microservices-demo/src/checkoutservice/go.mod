@@ -1,9 +1,12 @@
 module github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice
 
-go 1.23
+go 1.23.0
+
+replace github.com/GoogleCloudPlatform/microservices-demo/src/shared => ../shared
 
 require (
 	cloud.google.com/go/profiler v0.4.2
+	github.com/GoogleCloudPlatform/microservices-demo/src/shared v0.0.0-00010101000000-000000000000
 	github.com/google/uuid v1.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3

@@ -191,6 +191,18 @@ EOF
         done
         echo ""
     fi
+
+    # Display Go coverage summary if available
+    if [ -f "$REPORTS_DIR/go-coverage-summary.txt" ]; then
+        print_success "========================================="
+        print_success "Go Code Coverage Summary"
+        print_success "========================================="
+        cat "$REPORTS_DIR/go-coverage-summary.txt"
+        echo ""
+        print_info "View detailed coverage report:"
+        print_info "  open $REPORTS_DIR/go-coverage.html"
+        echo ""
+    fi
 else
     print_warning "No reports found in PVC"
     print_info "The test-runner Job may not have completed yet, or no tests have been run."
