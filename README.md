@@ -119,6 +119,18 @@ make clean-all
 
 For detailed command reference, see [docs/MAKEFILE_REFERENCE.md](docs/MAKEFILE_REFERENCE.md).
 
+## Documentation
+
+Comprehensive documentation is available in the [docs/](docs/) directory:
+
+- **[Documentation Index](docs/README.md)** - Complete documentation overview and navigation
+- **[Test Framework Guide](docs/TEST_FRAMEWORK.md)** - BDD test framework documentation
+- **[Makefile Reference](docs/MAKEFILE_REFERENCE.md)** - All available Make targets
+- **[Go Coverage Guide](docs/GO_COVERAGE_GUIDE.md)** - Code-level coverage for Go services
+- **[Tracing and Observability](docs/TRACING_AND_OBSERVABILITY.md)** - OpenTelemetry/Jaeger setup
+- **[K8s Test Deployment](docs/K8S_TEST_DEPLOYMENT.md)** - Running tests in Kubernetes
+- **[Microservices Demo](docs/MICROSERVICES_DEMO.md)** - Original Google Cloud demo docs
+
 ## Artifacts Generated
 
 Test Reports: ```test-framework/reports/*.xml (JUnit format)```

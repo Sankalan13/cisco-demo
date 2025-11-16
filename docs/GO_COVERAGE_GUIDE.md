@@ -7,8 +7,7 @@ This guide explains how to collect Go code coverage from the microservices demo.
 ### Running Tests with Coverage (Recommended)
 
 ```bash
-cd test-framework
-./run_local_tests.sh
+scripts/test-framework/run_local_tests.sh
 ```
 
 This script:
@@ -21,7 +20,7 @@ This script:
 If you've already run tests and just want to collect coverage:
 
 ```bash
-./collect_go_coverage.sh
+scripts/collect-coverage.sh
 ```
 
 ## How It Works
@@ -64,8 +63,7 @@ Go Service (Running) → SIGUSR1 Signal → Coverage Dump → Coverage Files
 
 **Command:**
 ```bash
-cd test-framework
-./run_local_tests.sh
+scripts/test-framework/run_local_tests.sh
 ```
 
 **Pros:**
@@ -89,11 +87,10 @@ cd test-framework
 **Command:**
 ```bash
 # Deploy with tests in Kubernetes Job mode
-./run_all.sh --deploy-tests
+make full-ci
 
-# Retrieve reports
-cd test-framework/deploy_scripts
-./get_test_reports.sh
+# Or retrieve reports manually
+scripts/deployment/get_test_reports.sh
 ```
 
 **Pros:**
@@ -154,15 +151,8 @@ Total Coverage: 84.0%
 
 **Solution:**
 ```bash
-# Rebuild services with coverage
-./build_go_services_with_coverage.sh
-
-# Redeploy with coverage-enabled images
-./run_all.sh
-
-# Run tests first, then collect coverage
-cd test-framework
-./run_local_tests.sh
+# Rebuild services with coverage and run tests
+make all
 ```
 
 ### Problem: "kubectl command not found"
@@ -219,7 +209,7 @@ If you've manually tested the services and want to collect coverage:
 
 ```bash
 # Trigger coverage dump manually
-./collect_go_coverage.sh
+scripts/collect-coverage.sh
 ```
 
 This is useful for:
@@ -231,20 +221,19 @@ This is useful for:
 
 ```bash
 # Run first set of tests
-cd test-framework
-./run_local_tests.sh
+scripts/test-framework/run_local_tests.sh
 
 # Save coverage data
-cp -r reports/go-coverage /tmp/coverage-run1
+cp -r test-framework/reports/go-coverage /tmp/coverage-run1
 
 # Run different tests
-behave features/other_scenarios.feature
+cd test-framework && behave features/other_scenarios.feature && cd ..
 
 # Collect coverage again
-../collect_go_coverage.sh
+scripts/collect-coverage.sh
 
 # Save second run
-cp -r reports/go-coverage /tmp/coverage-run2
+cp -r test-framework/reports/go-coverage /tmp/coverage-run2
 
 # Merge both runs
 go tool covdata merge \
@@ -261,8 +250,7 @@ go tool cover -html=combined-coverage.txt -o=combined-coverage.html
 ```yaml
 - name: Run Tests and Collect Coverage
   run: |
-    cd test-framework
-    ./run_local_tests.sh
+    scripts/test-framework/run_local_tests.sh
 
 - name: Upload Coverage Reports
   uses: actions/upload-artifact@v3
@@ -275,8 +263,7 @@ go tool cover -html=combined-coverage.txt -o=combined-coverage.html
 ```yaml
 test:
   script:
-    - cd test-framework
-    - ./run_local_tests.sh
+    - scripts/test-framework/run_local_tests.sh
   artifacts:
     paths:
       - test-framework/reports/
@@ -310,6 +297,6 @@ test:
 
 ## Related Documentation
 
-- [Test Framework README](test-framework/README.md) - Full testing documentation
-- [Deployment Scripts](test-framework/deploy_scripts/README.md) - Observability setup
-- [Build Scripts](build_go_services_with_coverage.sh) - Coverage build process
+- [Test Framework Guide](TEST_FRAMEWORK.md) - Full testing documentation
+- [Tracing and Observability](TRACING_AND_OBSERVABILITY.md) - Observability setup
+- [Makefile Reference](MAKEFILE_REFERENCE.md) - All available commands

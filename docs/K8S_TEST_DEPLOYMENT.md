@@ -65,11 +65,10 @@ If you already have a cluster running with services deployed:
 
 ```bash
 # Build and deploy test Job
-cd test-framework/deploy_scripts
-./deploy_test_runner.sh
+scripts/deployment/deploy_test_runner.sh
 
 # Retrieve reports after Job completes
-./get_test_reports.sh
+scripts/deployment/get_test_reports.sh
 ```
 
 ## Configuration
@@ -162,8 +161,7 @@ Automated deployment script that:
 
 **Usage:**
 ```bash
-cd test-framework/deploy_scripts
-./deploy_test_runner.sh
+scripts/deployment/deploy_test_runner.sh
 ```
 
 #### `get_test_reports.sh`
@@ -175,8 +173,7 @@ Report retrieval script that:
 
 **Usage:**
 ```bash
-cd test-framework/deploy_scripts
-./get_test_reports.sh
+scripts/deployment/get_test_reports.sh
 ```
 
 **Reports retrieved:**
@@ -524,7 +521,7 @@ metadata:
   name: test-runner
 spec:
   source:
-    path: test-framework/deploy_scripts
+    path: scripts/deployment
     targetRevision: main
   destination:
     namespace: default

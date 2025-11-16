@@ -23,10 +23,11 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Get script directory
+# Get script directory and project root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROTO_DIR="$SCRIPT_DIR/../microservices-demo/protos"
-OUTPUT_DIR="$SCRIPT_DIR/generated"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+PROTO_DIR="$PROJECT_ROOT/microservices-demo/protos"
+OUTPUT_DIR="$PROJECT_ROOT/test-framework/generated"
 
 print_info "Generating Python gRPC code from proto files..."
 
