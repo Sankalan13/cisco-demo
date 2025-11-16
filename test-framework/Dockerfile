@@ -69,7 +69,7 @@ COPY test-framework/features/ /app/features/
 COPY test-framework/utils/ /app/utils/
 COPY test-framework/behave.ini /app/
 COPY test-framework/generate_coverage.py /app/
-COPY test-framework/entrypoint.sh /app/
+COPY scripts/test-framework/entrypoint.sh /app/
 
 # Copy pre-generated proto code from builder stage
 COPY --from=builder /build/generated/ /app/generated/

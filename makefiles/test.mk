@@ -4,7 +4,8 @@
 # Configuration
 TEST_MODE ?= local
 TEST_FRAMEWORK_DIR := test-framework
-DEPLOY_SCRIPTS_DIR := $(TEST_FRAMEWORK_DIR)/deploy_scripts
+SCRIPTS_DIR := scripts
+DEPLOY_SCRIPTS_DIR := $(SCRIPTS_DIR)/deployment
 AUTO_APPROVE ?= 1
 
 ##@ Testing
@@ -49,7 +50,7 @@ generate-protos: $(TEST_FRAMEWORK_DIR)/generated/demo_pb2.py ## Generate Python 
 
 $(TEST_FRAMEWORK_DIR)/generated/demo_pb2.py: microservices-demo/protos/demo.proto
 	@echo "Generating Python protobuf code..."
-	@cd $(TEST_FRAMEWORK_DIR) && ./generate_protos.sh
+	@$(SCRIPTS_DIR)/test-framework/generate_protos.sh
 	@echo "✓ Protobuf code generated"
 
 clean-test-reports: ## Clean test reports
