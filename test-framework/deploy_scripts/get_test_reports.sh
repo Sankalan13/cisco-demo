@@ -151,19 +151,66 @@ echo ""
 
 # Step 8: Display report summary
 print_info "Step 8: Report Summary"
-print_info "========================================="
 
-# List local reports
-if [ "$(ls -A $REPORTS_DIR 2>/dev/null)" ]; then
-    echo ""
-    print_info "Local reports directory: $REPORTS_DIR"
-    ls -lh "$REPORTS_DIR/"
-    echo ""
+# Generate Go coverage summary locally if not present but coverage data exists
+if [ ! -f "$REPORTS_DIR/go-coverage-summary.txt" ] && [ -d "$REPORTS_DIR/go-coverage" ]; then
+    print_info "Generating Go coverage summary from retrieved coverage data..."
 
-    # Display coverage summary if available
-    if [ -f "$REPORTS_DIR/coverage.json" ]; then
-        print_info "Coverage Metrics:"
-        python3 << EOF
+    # Build coverage inputs list
+    COVERAGE_INPUTS=""
+    for service_dir in "$REPORTS_DIR/go-coverage/"*/; do
+        if [ -d "$service_dir" ] && ls "$service_dir"cov* >/dev/null 2>&1; then
+            if [ -z "$COVERAGE_INPUTS" ]; then
+                COVERAGE_INPUTS="$service_dir"
+            else
+                COVERAGE_INPUTS="$COVERAGE_INPUTS,$service_dir"
+            fi
+        fi
+    done
+
+    # Generate summary if we have coverage data
+    if [ -n "$COVERAGE_INPUTS" ]; then
+        if command -v go >/dev/null 2>&1; then
+            go tool covdata percent -i="$COVERAGE_INPUTS" > "$REPORTS_DIR/go-coverage-summary.txt" 2>/dev/null || \
+                print_warning "Failed to generate Go coverage summary"
+        else
+            print_warning "Go toolchain not found, cannot generate coverage summary"
+        fi
+    fi
+fi
+
+echo ""
+echo "========================================"
+echo "Behave Test Summary:"
+echo "========================================"
+
+# Display Behave summary if available
+if [ -f "$REPORTS_DIR/behave_output.txt" ]; then
+    tail -5 "$REPORTS_DIR/behave_output.txt" | grep -E "(features|scenarios|steps|Took)" || echo "Behave summary not available in output"
+else
+    echo "Behave output not found"
+fi
+
+echo ""
+echo "========================================"
+echo "Golang Coverage Summary:"
+echo "========================================"
+
+# Display Go coverage summary if available
+if [ -f "$REPORTS_DIR/go-coverage-summary.txt" ]; then
+    cat "$REPORTS_DIR/go-coverage-summary.txt"
+else
+    echo "Go coverage not available"
+fi
+
+echo ""
+echo "========================================"
+echo "Coverage Metrics"
+echo "========================================"
+
+# Display trace coverage summary if available
+if [ -f "$REPORTS_DIR/coverage.json" ]; then
+    python3 << EOF
 import json
 import sys
 try:
@@ -180,29 +227,27 @@ except Exception as e:
     print(f"  Error reading coverage report: {e}")
     sys.exit(0)
 EOF
-        echo ""
-    fi
+else
+    echo "  Coverage metrics not available"
+fi
 
-    # Display JUnit summary if available
-    if ls "$REPORTS_DIR"/TESTS-*.xml >/dev/null 2>&1; then
-        print_info "JUnit Test Reports:"
-        for report in "$REPORTS_DIR"/TESTS-*.xml; do
-            echo "  - $(basename "$report")"
-        done
-        echo ""
-    fi
+echo ""
+echo "========================================"
+echo "Reports"
+echo "========================================"
+echo "  Location: $REPORTS_DIR/"
+echo "  - Behave output: behave_output.txt"
+echo "  - JUnit XML: TESTS-*.xml"
+echo "  - Trace coverage: coverage.json"
+echo "  - Go coverage: go-coverage-*.html"
+echo "========================================"
+echo ""
 
-    # Display Go coverage summary if available
-    if [ -f "$REPORTS_DIR/go-coverage-summary.txt" ]; then
-        print_success "========================================="
-        print_success "Go Code Coverage Summary"
-        print_success "========================================="
-        cat "$REPORTS_DIR/go-coverage-summary.txt"
-        echo ""
-        print_info "View detailed coverage report:"
-        print_info "  open $REPORTS_DIR/go-coverage.html"
-        echo ""
-    fi
+# List local reports
+if [ "$(ls -A $REPORTS_DIR 2>/dev/null)" ]; then
+    print_info "Local reports directory: $REPORTS_DIR"
+    ls -lh "$REPORTS_DIR/" | head -20
+    echo ""
 else
     print_warning "No reports found in PVC"
     print_info "The test-runner Job may not have completed yet, or no tests have been run."

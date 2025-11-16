@@ -41,6 +41,7 @@ behave /app/features/ \
     --junit \
     --junit-directory /app/reports/ \
     --no-capture \
+    2>&1 | tee /app/reports/behave_output.txt \
     || TEST_EXIT_CODE=$?
 
 echo ""

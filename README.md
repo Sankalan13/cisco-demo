@@ -71,7 +71,7 @@ Ensure you have the following tools installed in your system:
 
 - Once everything is installed, you should be able to run the tests from the root directory using the below command:
 
-  ```./run_all.sh```
+  ```make full-ci```
 
   This command does the following:
   - Builds custom service images locally
@@ -82,11 +82,42 @@ Ensure you have the following tools installed in your system:
       - productcatalogservice:local-coverage
       - checkoutservice:local-coverage
       - shippingservice:local-coverage
-  - Creates and verifies kind cluster
+  - Creates and verifies Kind cluster
   - Loads images into the cluster
-  - Deploy services and observability with Kustomize
+  - Deploys services and observability with Kustomize
+  - Starts port-forwarding for local access
   - Runs tests
-  - Generates Coverage Metrics
+  - Generates coverage metrics
+
+## Quick Start Commands
+
+```bash
+# Full workflow (build, deploy, test, coverage)
+make all
+
+# Fast iteration (skip builds if cached)
+make quick
+
+# Show all available commands
+make help
+
+# Build only
+make build
+
+# Deploy only
+make deploy
+
+# Run tests only
+make test
+
+# Generate coverage
+make coverage
+
+# Clean up everything
+make clean-all
+```
+
+For detailed command reference, see [docs/MAKEFILE_REFERENCE.md](docs/MAKEFILE_REFERENCE.md).
 
 ## Artifacts Generated
 
@@ -104,4 +135,13 @@ Service Endpoints: Various localhost ports (3550, 7070, etc.)
 
 - Due to lack of a paid LLM subscription, it was difficult working with free available versions. A monthly subscription for Claude was purchased for $23.60.
 - Claude Pro Plan includes a 5 hour session time lock with model usage constraints that made development slow and inconsistent
+
+## Further improvements
+
+Provided with the $100 Claude Max subscription, further improvements would have been made to the current framework. The pro version model usage cap was reached within 3 days of development work and buying the Max subscription was not possible. 
+
+- Added instrumentation to all non golang services so that line and conditional coverage can be extracted at runtime
+- Added unit tests and collected unit tests coverage since not all services has unit tests
+- Added contract tests between the consumers and producers in the microservice architecture
+- Added UI tests for critical priority happy case user lifecycle flows
   

@@ -31,7 +31,8 @@ print_warning() {
 }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPORTS_DIR="$SCRIPT_DIR/test-framework/reports"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPORTS_DIR="$PROJECT_ROOT/test-framework/reports"
 GO_SERVICES="productcatalogservice checkoutservice shippingservice"
 
 print_info "========================================="
@@ -138,26 +139,35 @@ fi
 print_info "  Merging coverage data..."
 mkdir -p "$REPORTS_DIR/go-coverage/merged"
 
-if go tool covdata merge -i="$COVERAGE_INPUTS" -o="$REPORTS_DIR/go-coverage/merged" 2>/dev/null; then
+# Try to merge coverage data and capture the error
+MERGE_ERROR=$(go tool covdata merge -i="$COVERAGE_INPUTS" -o="$REPORTS_DIR/go-coverage/merged" 2>&1)
+if [ $? -eq 0 ]; then
     print_success "  ✓ Merged coverage data"
 else
-    print_error "  ✗ Failed to merge coverage data"
-    exit 1
+    print_warning "  Warning: Coverage merge failed (this is normal if no coverage was collected)"
+    print_info "  Error details: $MERGE_ERROR"
+    print_info "  Attempting to process individual service coverage files..."
+
+    # Continue anyway to try generating individual reports
+    # Don't exit, just warn
 fi
 
-# Convert to text format
-print_info "  Converting to text format..."
-if go tool covdata textfmt -i="$REPORTS_DIR/go-coverage/merged" -o="$REPORTS_DIR/go-coverage.txt" 2>/dev/null; then
-    print_success "  ✓ Generated text coverage report"
+# Convert to text format (only if merge succeeded)
+if ls "$REPORTS_DIR/go-coverage/merged/covmeta."* >/dev/null 2>&1; then
+    print_info "  Converting to text format..."
+    if go tool covdata textfmt -i="$REPORTS_DIR/go-coverage/merged" -o="$REPORTS_DIR/go-coverage.txt" 2>/dev/null; then
+        print_success "  ✓ Generated text coverage report"
+    else
+        print_warning "  ⚠ Failed to generate merged text coverage report"
+    fi
 else
-    print_error "  ✗ Failed to generate text coverage report"
-    exit 1
+    print_info "  Skipping merged text report (merge failed)"
 fi
 
 # Generate per-service HTML reports
 print_info "  Generating HTML reports for each service..."
 for service in $GO_SERVICES; do
-    SERVICE_DIR="$SCRIPT_DIR/microservices-demo/src/$service"
+    SERVICE_DIR="$PROJECT_ROOT/microservices-demo/src/$service"
     if [ -d "$SERVICE_DIR" ] && [ -d "$REPORTS_DIR/go-coverage/$service" ]; then
         cd "$SERVICE_DIR"
         # Generate text format for this service only
@@ -168,11 +178,20 @@ for service in $GO_SERVICES; do
         fi
     fi
 done
-cd "$SCRIPT_DIR"
+cd "$PROJECT_ROOT"
 
 # Generate coverage summary
 print_info "  Generating coverage summary..."
-go tool covdata percent -i="$REPORTS_DIR/go-coverage/merged" > "$REPORTS_DIR/go-coverage-summary.txt" 2>/dev/null || true
+if ls "$REPORTS_DIR/go-coverage/merged/covmeta."* >/dev/null 2>&1; then
+    # Use merged data for summary
+    go tool covdata percent -i="$REPORTS_DIR/go-coverage/merged" > "$REPORTS_DIR/go-coverage-summary.txt" 2>/dev/null || true
+elif ls "$REPORTS_DIR/go-coverage/"*/covmeta.* >/dev/null 2>&1; then
+    # If merge failed but we have individual service coverage, generate summary from all services
+    print_info "  Generating summary from individual services..."
+    go tool covdata percent -i="$COVERAGE_INPUTS" > "$REPORTS_DIR/go-coverage-summary.txt" 2>/dev/null || true
+else
+    print_warning "  No coverage data available for summary"
+fi
 
 echo ""
 print_success "========================================="
