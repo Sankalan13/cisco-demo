@@ -6,10 +6,20 @@ import json
 import logging
 from pathlib import Path
 from datetime import datetime, timezone
+from behave import register_type
+import parse
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
+
+# Register custom parse types for step parameters
+@parse.with_pattern(r'\d+\.?\d*')
+def parse_float(text):
+    """Parse float values for step parameters."""
+    return float(text)
+
+register_type(f=parse_float)
 
 from utils.clients import (
     ProductCatalogClient,

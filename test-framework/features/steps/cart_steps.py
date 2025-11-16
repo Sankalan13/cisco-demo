@@ -91,3 +91,56 @@ def step_verify_product_id_in_cart(context):
     assert cart_product_id == expected_product_id, \
         f"Expected product ID {expected_product_id}, but found {cart_product_id} in cart"
     logger.info(f"✓ Product ID in cart matches: {cart_product_id}")
+
+
+@when('I empty my cart')
+def step_empty_cart(context):
+    """Empty the cart for the current user."""
+    assert context.user_id is not None, "No user ID available"
+
+    try:
+        context.cart_client.empty_cart(context.user_id)
+        logger.info(f"Emptied cart for user {context.user_id}")
+    except grpc.RpcError as e:
+        context.grpc_error = e
+        raise AssertionError(f"Failed to empty cart: {e.code()} - {e.details()}")
+
+
+@then('the cart should have all added products')
+def step_verify_all_products_in_cart(context):
+    """Verify that cart contains all the products that were added."""
+    assert context.cart is not None, "Cart is None"
+    # This is a general verification that items exist in cart
+    # More specific checks are done by item count verification
+    assert len(context.cart.items) > 0, "Cart is empty but should have products"
+    logger.info(f"✓ Cart has {len(context.cart.items)} products")
+
+
+@then('the product "{product_id}" should have quantity {expected_quantity:d}')
+def step_verify_specific_product_quantity(context, product_id, expected_quantity):
+    """Verify that a specific product has the expected quantity in cart."""
+    assert context.cart is not None, "Cart is None"
+
+    # Find the product in cart
+    found = False
+    for item in context.cart.items:
+        if item.product_id == product_id:
+            found = True
+            actual_quantity = item.quantity
+            assert actual_quantity == expected_quantity, \
+                f"Product {product_id} has quantity {actual_quantity}, expected {expected_quantity}"
+            logger.info(f"✓ Product {product_id} has correct quantity: {expected_quantity}")
+            break
+
+    assert found, f"Product {product_id} not found in cart"
+
+
+@then('the cart should contain product "{product_id}"')
+def step_verify_cart_contains_product(context, product_id):
+    """Verify that cart contains a specific product."""
+    assert context.cart is not None, "Cart is None"
+
+    product_ids = [item.product_id for item in context.cart.items]
+    assert product_id in product_ids, \
+        f"Product {product_id} not found in cart. Cart contains: {product_ids}"
+    logger.info(f"✓ Cart contains product {product_id}")

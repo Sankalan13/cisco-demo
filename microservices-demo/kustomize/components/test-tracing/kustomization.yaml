@@ -273,6 +273,13 @@ patches:
               value: "opentelemetrycollector:4317"
             - name: OTEL_SERVICE_NAME
               value: "cartservice"
+            resources:
+              requests:
+                cpu: 500m
+                memory: 256Mi
+              limits:
+                cpu: 1000m
+                memory: 512Mi
 
 - patch: |-
     apiVersion: apps/v1
