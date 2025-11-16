@@ -3,9 +3,10 @@
 
 FROM python:3.12-slim AS builder
 
-# Install system dependencies
+# Install system dependencies including Go toolchain for coverage processing
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
+    golang-go \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
@@ -46,9 +47,14 @@ RUN mkdir -p /build/generated && \
 # Final stage
 FROM python:3.12-slim
 
-# Install runtime dependencies
+# Install runtime dependencies including kubectl and Go for coverage processing
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
+    curl \
+    golang-go \
+    && curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
+    && install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl \
+    && rm kubectl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -67,6 +73,13 @@ COPY test-framework/entrypoint.sh /app/
 
 # Copy pre-generated proto code from builder stage
 COPY --from=builder /build/generated/ /app/generated/
+
+# Copy Go service source code for coverage HTML generation
+# Only copy the services we're collecting coverage for
+COPY microservices-demo/src/productcatalogservice/ /app/microservices-demo/src/productcatalogservice/
+COPY microservices-demo/src/checkoutservice/ /app/microservices-demo/src/checkoutservice/
+COPY microservices-demo/src/shippingservice/ /app/microservices-demo/src/shippingservice/
+COPY microservices-demo/src/shared/ /app/microservices-demo/src/shared/
 
 # Make entrypoint executable
 RUN chmod +x /app/entrypoint.sh

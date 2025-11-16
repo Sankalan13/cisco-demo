@@ -121,6 +121,12 @@ fi
 
 echo ""
 
+# Build Go services with coverage instrumentation
+print_info "Building Go services with coverage instrumentation..."
+echo ""
+./build_go_services_with_coverage.sh
+echo ""
+
 # Step 2: Create/verify Kind cluster
 print_info "Step 2: Creating Kind cluster..."
 echo ""
@@ -177,11 +183,22 @@ echo ""
 print_info "Step 3: Loading images into Kind cluster..."
 echo ""
 
+# Load Node.js images with telemetry fixes
 kind load docker-image currencyservice:local-fixed --name "$CLUSTER_NAME"
 print_success "✓ currencyservice loaded"
 
 kind load docker-image paymentservice:local-fixed --name "$CLUSTER_NAME"
 print_success "✓ paymentservice loaded"
+
+# Load Go images with coverage instrumentation
+kind load docker-image productcatalogservice:local-coverage --name "$CLUSTER_NAME"
+print_success "✓ productcatalogservice loaded"
+
+kind load docker-image checkoutservice:local-coverage --name "$CLUSTER_NAME"
+print_success "✓ checkoutservice loaded"
+
+kind load docker-image shippingservice:local-coverage --name "$CLUSTER_NAME"
+print_success "✓ shippingservice loaded"
 
 echo ""
 
@@ -564,8 +581,67 @@ PYTHON_SUMMARY
     fi
 
     echo ""
+
+    # Collect Go coverage after trace coverage
+    print_info "Collecting Go code coverage from services..."
+    echo ""
+
+    if [ -f "$SCRIPT_DIR/collect_go_coverage.sh" ]; then
+        if "$SCRIPT_DIR/collect_go_coverage.sh"; then
+            print_success "Go coverage collected successfully!"
+        else
+            print_warning "Go coverage collection failed or no coverage data available"
+        fi
+    else
+        print_warning "Go coverage collection script not found"
+        print_info "Expected location: $SCRIPT_DIR/collect_go_coverage.sh"
+    fi
+
+    echo ""
 else
-    print_info "Step 7: Skipping coverage generation (already handled by Kubernetes Job)"
+    print_info "Step 7: Coverage collection (handled by Kubernetes Job)"
+    echo ""
+
+    # After reports are extracted from the Job's PVC, generate HTML reports locally
+    # The Job collects raw coverage data, but HTML generation requires source code
+    REPORTS_DIR="$SCRIPT_DIR/test-framework/reports"
+    if [ -d "$REPORTS_DIR/go-coverage" ]; then
+        print_info "Generating Go coverage HTML reports from collected data..."
+        echo ""
+
+        GO_SERVICES="productcatalogservice checkoutservice shippingservice"
+        HTML_GENERATED=false
+
+        # Generate per-service HTML reports (don't need merged data for this)
+        for service in $GO_SERVICES; do
+            SERVICE_DIR="$SCRIPT_DIR/microservices-demo/src/$service"
+            SERVICE_COV_DIR="$REPORTS_DIR/go-coverage/$service"
+
+            if [ -d "$SERVICE_DIR" ] && [ -d "$SERVICE_COV_DIR" ] && ls "$SERVICE_COV_DIR/"cov* >/dev/null 2>&1; then
+                cd "$SERVICE_DIR"
+
+                # Generate text format for this service only
+                if go tool covdata textfmt -i="$SERVICE_COV_DIR" -o="$REPORTS_DIR/go-coverage-$service.txt" 2>/dev/null; then
+                    # Generate HTML from the service-specific coverage
+                    if go tool cover -html="$REPORTS_DIR/go-coverage-$service.txt" -o="$REPORTS_DIR/go-coverage-$service.html" 2>/dev/null; then
+                        print_success "  ✓ Generated HTML for $service"
+                        HTML_GENERATED=true
+                    fi
+                fi
+            fi
+        done
+        cd "$SCRIPT_DIR"
+
+        echo ""
+        if [ "$HTML_GENERATED" = true ]; then
+            print_success "Go coverage HTML reports generated"
+        else
+            print_warning "No coverage data found - HTML reports cannot be generated"
+        fi
+    else
+        print_warning "No Go coverage data directory found"
+    fi
+
     echo ""
 fi
 
@@ -577,6 +653,7 @@ echo ""
 print_info "Summary:"
 print_info "  ✓ Cluster deployed with all services (Kustomize overlay)"
 print_info "  ✓ Node.js services built with OTel fixes"
+print_info "  ✓ Go services built with coverage instrumentation"
 print_info "  ✓ Tracing enabled on all services (via Kustomize component)"
 print_info "  ✓ Observability stack deployed (OTel Collector + Jaeger)"
 print_info "  ✓ Port-forwards active on localhost"
@@ -591,6 +668,15 @@ echo "  - Frontend:         localhost:8080"
 echo ""
 print_info "Observability:"
 echo "  - Jaeger UI:        http://localhost:16686"
+echo ""
+print_info "Coverage Reports:"
+if [ -f "$SCRIPT_DIR/test-framework/reports/coverage.json" ]; then
+    echo "  - Trace Coverage:   test-framework/reports/coverage.json"
+fi
+if [ -f "$SCRIPT_DIR/test-framework/reports/go-coverage-summary.txt" ]; then
+    echo "  - Go Coverage:      test-framework/reports/go-coverage-*.html"
+    echo "                      test-framework/reports/go-coverage-summary.txt"
+fi
 echo ""
 print_warning "Port-forwards will be cleaned up automatically on exit"
 echo ""

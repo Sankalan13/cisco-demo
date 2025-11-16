@@ -17,21 +17,26 @@ ARG TARGETOS
 ARG TARGETARCH
 
 WORKDIR /src
+# Copy shared module first (required for coverage signal handler)
+COPY shared /src/../shared
 # restore dependencies
-COPY go.mod go.sum ./
+COPY productcatalogservice/go.mod productcatalogservice/go.sum ./
 RUN go mod download
-COPY . .
+COPY productcatalogservice/ .
 
 # Skaffold passes in debug-oriented compiler flags
 ARG SKAFFOLD_GO_GCFLAGS
-RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o /productcatalogservice .
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 go build -cover -covermode=atomic -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o /productcatalogservice .
 
-FROM scratch
+FROM gcr.io/distroless/base-debian11:debug
 
 WORKDIR /src
 COPY --from=builder /productcatalogservice ./server
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY products.json .
+COPY productcatalogservice/products.json .
+
+# Create directory for coverage data
+RUN ["mkdir", "-p", "/coverage-data"]
 
 # Definition of this variable is used by 'skaffold debug' to identify a golang binary.
 # Default behavior - a failure prints a stack trace for the current goroutine.

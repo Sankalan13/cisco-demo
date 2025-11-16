@@ -63,6 +63,138 @@ sleep 5
 echo -e "${GREEN}✓ Trace propagation complete${NC}"
 echo ""
 
+# ============================================
+# Go Coverage Collection
+# ============================================
+
+echo -e "${BLUE}=========================================${NC}"
+echo -e "${BLUE}Collecting Go Code Coverage${NC}"
+echo -e "${BLUE}=========================================${NC}"
+echo ""
+
+# List of Go services with coverage instrumentation
+GO_SERVICES="productcatalogservice checkoutservice shippingservice"
+
+# Step 1: Trigger coverage dump via SIGUSR1 signal
+echo -e "${BLUE}Step 1: Triggering coverage dumps from running Go services...${NC}"
+for service in $GO_SERVICES; do
+    # Find pod name for service
+    POD=$(kubectl get pods -l app=$service -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+
+    if [ -n "$POD" ]; then
+        echo "  Sending SIGUSR1 to $service (pod: $POD)"
+        # Use busybox in distroless:debug image
+        kubectl exec "$POD" -- /busybox/sh -c '/busybox/kill -USR1 1' 2>/dev/null || {
+            echo -e "${YELLOW}    Warning: Could not signal $service${NC}"
+        }
+    else
+        echo -e "${YELLOW}    Warning: Pod not found for $service${NC}"
+    fi
+done
+
+# Wait for coverage files to be written
+echo "  Waiting for coverage files to be written..."
+sleep 3
+echo -e "${GREEN}✓ Coverage dump signals sent${NC}"
+echo ""
+
+# Step 2: Collect coverage files from each service
+echo -e "${BLUE}Step 2: Downloading coverage files from pods...${NC}"
+mkdir -p /app/reports/go-coverage
+
+for service in $GO_SERVICES; do
+    POD=$(kubectl get pods -l app=$service -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+
+    if [ -n "$POD" ]; then
+        echo "  Collecting from $service..."
+        mkdir -p "/app/reports/go-coverage/$service"
+
+        # Copy coverage directory from pod to local
+        kubectl cp "$POD:/coverage-data" "/app/reports/go-coverage/$service/" 2>/dev/null || {
+            echo -e "${YELLOW}    Warning: No coverage data from $service${NC}"
+        }
+    fi
+done
+
+echo -e "${GREEN}✓ Coverage files downloaded${NC}"
+echo ""
+
+# Step 3: Process and merge coverage
+echo -e "${BLUE}Step 3: Processing Go coverage data...${NC}"
+
+# Build input paths for merge (only include directories that have coverage files)
+COVERAGE_INPUTS=""
+for service in $GO_SERVICES; do
+    # Check both possible locations for coverage files
+    SERVICE_DIR="/app/reports/go-coverage/$service"
+    COVERAGE_DATA_DIR="$SERVICE_DIR/coverage-data"
+
+    # Move files from subdirectory if they exist there
+    if [ -d "$COVERAGE_DATA_DIR" ] && ls "$COVERAGE_DATA_DIR/"cov* >/dev/null 2>&1; then
+        mv "$COVERAGE_DATA_DIR/"* "$SERVICE_DIR/" 2>/dev/null || true
+        rmdir "$COVERAGE_DATA_DIR" 2>/dev/null || true
+    fi
+
+    # Add to merge inputs if coverage files exist
+    if [ -d "$SERVICE_DIR" ] && ls "$SERVICE_DIR/"cov* >/dev/null 2>&1; then
+        if [ -z "$COVERAGE_INPUTS" ]; then
+            COVERAGE_INPUTS="$SERVICE_DIR"
+        else
+            COVERAGE_INPUTS="$COVERAGE_INPUTS,$SERVICE_DIR"
+        fi
+    fi
+done
+
+if [ -n "$COVERAGE_INPUTS" ]; then
+    echo "  Merging coverage data from all services..."
+
+    # Merge coverage from all services
+    if go tool covdata merge -i="$COVERAGE_INPUTS" -o=/app/reports/go-coverage/merged 2>/dev/null; then
+        echo "  Generating coverage reports..."
+
+        # Generate merged text format
+        go tool covdata textfmt \
+            -i=/app/reports/go-coverage/merged \
+            -o=/app/reports/go-coverage.txt 2>/dev/null
+
+        # Get summary statistics
+        go tool covdata percent \
+            -i=/app/reports/go-coverage/merged \
+            > /app/reports/go-coverage-summary.txt 2>/dev/null
+
+        # Generate per-service HTML reports (source code is in /app/microservices-demo/src/)
+        echo "  Generating per-service HTML reports..."
+        for service in $GO_SERVICES; do
+            SERVICE_SRC_DIR="/app/microservices-demo/src/$service"
+            SERVICE_COV_DIR="/app/reports/go-coverage/$service"
+
+            if [ -d "$SERVICE_SRC_DIR" ] && [ -d "$SERVICE_COV_DIR" ] && ls "$SERVICE_COV_DIR/"cov* >/dev/null 2>&1; then
+                cd "$SERVICE_SRC_DIR"
+
+                # Generate text format for this service only
+                go tool covdata textfmt \
+                    -i="$SERVICE_COV_DIR" \
+                    -o="/app/reports/go-coverage-$service.txt" 2>/dev/null || continue
+
+                # Generate HTML from the service-specific coverage
+                if go tool cover \
+                    -html="/app/reports/go-coverage-$service.txt" \
+                    -o="/app/reports/go-coverage-$service.html" 2>/dev/null; then
+                    echo "    ✓ Generated HTML for $service"
+                fi
+            fi
+        done
+
+        echo -e "${GREEN}✓ Go coverage reports generated${NC}"
+    else
+        echo -e "${YELLOW}Warning: Coverage merge failed (this is normal if no coverage was collected)${NC}"
+    fi
+else
+    echo -e "${YELLOW}No Go coverage data found${NC}"
+fi
+
+echo ""
+
 # Generate coverage report from Jaeger traces
 echo -e "${BLUE}Generating test coverage metrics from Jaeger...${NC}"
 echo ""
@@ -85,9 +217,9 @@ echo -e "${BLUE}=========================================${NC}"
 echo -e "${BLUE}Test Execution Summary${NC}"
 echo -e "${BLUE}=========================================${NC}"
 
-# Display coverage summary if report exists
+# Display trace-based coverage summary if report exists
 if [ -f "/app/reports/coverage.json" ]; then
-    echo -e "${GREEN}Coverage Metrics:${NC}"
+    echo -e "${GREEN}Trace-Based Coverage Metrics (Integration-Level):${NC}"
     python3 -c "
 import json
 import sys
@@ -105,6 +237,13 @@ except Exception as e:
     print(f\"  Error reading coverage report: {e}\")
     sys.exit(0)  # Don't fail on summary display errors
 "
+    echo ""
+fi
+
+# Display Go code coverage summary if report exists
+if [ -f "/app/reports/go-coverage-summary.txt" ]; then
+    echo -e "${GREEN}Go Code Coverage Metrics (Code-Level):${NC}"
+    cat /app/reports/go-coverage-summary.txt | sed 's/^/  /'
     echo ""
 fi
 

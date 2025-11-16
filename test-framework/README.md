@@ -222,6 +222,17 @@ From the project root:
 
 **Step 3: Run Tests**
 
+**Option A: Using the Local Test Runner (Recommended)**
+
+This automatically collects Go coverage after tests:
+```bash
+cd test-framework
+./run_local_tests.sh
+```
+
+**Option B: Direct Behave Execution**
+
+For development and debugging:
 ```bash
 cd test-framework
 
@@ -240,6 +251,8 @@ behave --tags=@smoke
 # Generate JUnit XML report
 behave --junit --junit-directory reports/
 ```
+
+**Note:** When using Option B, Go coverage is NOT collected automatically. You'll need to run `../collect_go_coverage.sh` separately to collect Go coverage.
 
 ### Option 3: Run Individual Scenarios
 
@@ -761,13 +774,118 @@ http://localhost:16686
 - Compare traces to identify performance regressions
 - Export traces for further analysis
 
-### Trace-Based Coverage (Future)
+### Test Coverage Metrics
 
-In future enhancements, the framework will automatically:
-- Extract service and method coverage from traces
-- Generate HTML coverage reports
-- Track coverage improvements across test runs
-- Identify untested workflows
+The test framework now provides **two complementary types of coverage**:
+
+#### 1. Trace-Based Coverage (Integration-Level)
+
+Automatically extracts service and method coverage from Jaeger distributed traces:
+- **Service Coverage**: Which microservices were called during tests
+- **Method Coverage**: Which gRPC methods were invoked
+- **Call Graphs**: Service-to-service interaction patterns
+- **Report Format**: JSON with service/method call statistics
+
+**Generated Reports:**
+- `coverage.json` - Detailed service and method call coverage
+
+**Example Output:**
+```json
+{
+  "summary": {
+    "total_services": 9,
+    "covered_services": 3,
+    "service_coverage_percentage": 33.3,
+    "total_methods": 20,
+    "covered_methods": 9,
+    "method_coverage_percentage": 45.0
+  }
+}
+```
+
+#### 2. Go Code Coverage (Code-Level)
+
+Captures line and branch execution coverage for Go microservices using Go 1.20+ native coverage instrumentation:
+
+**How It Works:**
+1. Go services are built with `-cover -covermode=atomic` flag
+2. Services dump coverage data on SIGUSR1 signal (no shutdown required)
+3. Test framework triggers dumps after BDD tests complete
+4. Coverage files are collected, merged, and processed into reports
+
+**Services with Go Coverage:**
+- ✅ productcatalogservice
+- ✅ checkoutservice
+- ✅ shippingservice
+
+**Generated Reports:**
+- `go-coverage.html` - Interactive HTML with source code highlighting
+- `go-coverage-summary.txt` - Package-level coverage percentages
+- `go-coverage.txt` - Text format for tooling integration
+
+**Example Output:**
+```
+github.com/GoogleCloudPlatform/.../productcatalogservice    82.5%
+github.com/GoogleCloudPlatform/.../checkoutservice          78.3%
+github.com/GoogleCloudPlatform/.../shippingservice          91.2%
+---
+Total Coverage: 84.0%
+```
+
+**Collecting Go Coverage:**
+
+**Option 1: Automatic Collection (Recommended)**
+
+Run tests using the local test runner, which automatically collects Go coverage:
+```bash
+cd test-framework
+./run_local_tests.sh
+```
+
+**Option 2: Manual Collection**
+
+If you ran tests manually, collect Go coverage separately:
+```bash
+# From project root
+./collect_go_coverage.sh
+```
+
+This script:
+1. Sends SIGUSR1 signal to trigger coverage dumps
+2. Collects coverage files from running pods
+3. Merges and processes coverage data
+4. Generates HTML and text reports
+
+**Option 3: Kubernetes Job Mode**
+
+When using `--deploy-tests` flag, coverage is collected automatically:
+```bash
+cd test-framework/deploy_scripts
+./get_test_reports.sh
+```
+
+**Viewing Coverage Reports:**
+
+After collection, open the HTML coverage report:
+```bash
+open test-framework/reports/go-coverage.html
+```
+
+#### Coverage Comparison
+
+| Aspect | Trace Coverage | Go Coverage |
+|--------|---------------|-------------|
+| **Level** | Integration | Code |
+| **Measures** | Service/method calls | Line/branch execution |
+| **Granularity** | gRPC methods | Functions, lines, branches |
+| **Language** | All services | Go services only |
+| **Data Source** | Jaeger traces | Go runtime instrumentation |
+| **Best For** | E2E workflows | Code execution paths |
+
+**Why Both?**
+- **Trace coverage** shows WHICH services were called (integration-level)
+- **Go coverage** shows WHAT code was executed (code-level)
+- Together they provide comprehensive testing insights!
 
 See [deploy_scripts/README.md](deploy_scripts/README.md) for detailed observability setup documentation.
 

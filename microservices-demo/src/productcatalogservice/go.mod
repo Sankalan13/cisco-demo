@@ -4,10 +4,13 @@ go 1.23.0
 
 toolchain go1.24.1
 
+replace github.com/GoogleCloudPlatform/microservices-demo/src/shared => ../shared
+
 require (
 	cloud.google.com/go/alloydbconn v1.15.0
 	cloud.google.com/go/profiler v0.4.2
 	cloud.google.com/go/secretmanager v1.14.6
+	github.com/GoogleCloudPlatform/microservices-demo/src/shared v0.0.0-00010101000000-000000000000
 	github.com/golang/protobuf v1.5.4
 	github.com/jackc/pgx/v5 v5.7.4
 	github.com/pkg/errors v0.9.1

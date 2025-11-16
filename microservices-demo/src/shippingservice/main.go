@@ -29,6 +29,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	pb "github.com/GoogleCloudPlatform/microservices-demo/src/shippingservice/genproto"
+	"github.com/GoogleCloudPlatform/microservices-demo/src/shared"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
@@ -53,6 +54,9 @@ func init() {
 }
 
 func main() {
+	// Setup coverage signal handler (no-op if GOCOVERDIR not set)
+	shared.SetupCoverageSignalHandler()
+
 	if os.Getenv("DISABLE_TRACING") == "" {
 		log.Info("Tracing enabled, but temporarily unavailable")
 		log.Info("See https://github.com/GoogleCloudPlatform/microservices-demo/issues/422 for more info.")

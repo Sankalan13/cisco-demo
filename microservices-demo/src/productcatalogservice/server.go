@@ -26,6 +26,7 @@ import (
 	"time"
 
 	pb "github.com/GoogleCloudPlatform/microservices-demo/src/productcatalogservice/genproto"
+	"github.com/GoogleCloudPlatform/microservices-demo/src/shared"
 	"google.golang.org/grpc/credentials/insecure"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
@@ -65,6 +66,9 @@ func init() {
 }
 
 func main() {
+	// Setup coverage signal handler (no-op if GOCOVERDIR not set)
+	shared.SetupCoverageSignalHandler()
+
 	if os.Getenv("ENABLE_TRACING") == "1" {
 		err := initTracing()
 		if err != nil {
