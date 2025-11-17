@@ -2,6 +2,8 @@
 
 This repository is responsible for running end to end system tests on the google microservices demo repository on fix version v0.10.3 as main repo is broken. The test strategy involves testing user life cycle workflows via gRPC calls to the backend services and using OpenTelemetry and Jager to capture trace coverage of the tests. We also generate golang services coverage report using the golang coverprofile directly from running containers. 
 
+[![Watch the video](https://img.youtube.com/vi/9NGlalPd1FQ/0.jpg)](https://youtu.be/9NGlalPd1FQ)
+
 # Documentation Index
 
 This file contains all documentation for the microservices-demo testing framework.
