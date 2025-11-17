@@ -4,13 +4,14 @@
 
 Here are some changes made to the source code to support coverage generation and some constraints yet to be addressed:
 
-- Line and conditional coverage can only be generated from instrumented microservices. Out of the available microservices only the golang services were instrumented. Adding instrumentation to other services resulted in broken docker image thus adding constraint to the tests.
+- Line coverage was only generated from golang services, first attempt was to add instrumentation to all services which failed
 - Changes were made to the golang services to use a shared mod that can generate live coverage using a SIGUSR1 command without exiting or restarting the golang servers
 - The dockerfiles for golang services were edited to support coverage profiling while the server is running, a total of 3 golang services were edited
 - OpenCensus was available on the microservices apart from cart service, OpenTelemetry Collector was added to track system traces and generate behavioural coverage for the overall system. This coverage report shows us total number of API paths and services covered in the stack.
 - Changes were made to the node services to fix a bug in trace generation, total 2 services were edited
 - Cart Service was restarting duing tests because of low resource allocation, resource allocation was increased in the Kustomize manifests
 - OpenTelemetryCollector and Jager were added to the service stack as observability to collect system wide traces and generate behavioural coverage
+- Existing unit tests for each services was executed and the coverage reports can be found in the source folder
 
 ## Running the framework
 
@@ -148,12 +149,20 @@ Service Endpoints: Various localhost ports (3550, 7070, etc.)
 - Due to lack of a paid LLM subscription, it was difficult working with free available versions. A monthly subscription for Claude was purchased for $23.60.
 - Claude Pro Plan includes a 5 hour session time lock with model usage constraints that made development slow and inconsistent
 
+## What I learnt
+
+- Good LLM support agents are expensive
+- Instrumenting a dotnet service is not as easy as its put out to be
+- Makefile is great at a lot of things over shell script but shell is still great at fine grain user control to the workflow
+
 ## Further improvements
 
-Provided with the $100 Claude Max subscription, further improvements would have been made to the current framework. The pro version model usage cap was reached within 3 days of development work and buying the Max subscription was not possible. 
+Provided with the $100 Claude Max subscription, further improvements would have been made to the current framework. The pro version model usage cap was reached within 3 days of development work and buying the Max subscription was not possible. Maxed out all my free usage on tools like Cursor and Windsurf for multiple accounts. The project was built from Friday to Sunday. With the initial plan to submit the assignment on Wednesday, I would have changed:
 
-- Added instrumentation to all non golang services so that line and conditional coverage can be extracted at runtime
+- Add helm chart deployments and helmfile with test job as helm test hook using helmfile, currently using Kustomize for deployments
 - Added unit tests and collected unit tests coverage since not all services has unit tests
 - Added contract tests between the consumers and producers in the microservice architecture
 - Added UI tests for critical priority happy case user lifecycle flows
+- Improved test data management
+- Improved line coverage for golang services
   

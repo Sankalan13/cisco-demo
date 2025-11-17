@@ -1,0 +1,26 @@
+mode: set
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:35.31,37.2 1 1
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:39.35,41.2 1 1
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:43.35,43.84 1 1
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:46.30,46.79 1 1
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:50.34,52.2 1 1
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:56.34,58.2 1 1
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:62.42,64.2 1 1
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:68.36,71.2 1 1
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:74.34,79.2 1 1
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:83.43,84.16 1 1
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:84.16,85.13 1 1
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:87.2,87.10 1 1
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:93.43,94.32 1 1
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:94.32,96.3 1 1
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:96.8,96.55 1 1
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:96.55,98.3 1 1
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:99.2,102.90 3 1
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:102.90,106.3 2 1
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:106.8,108.16 1 0
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:108.16,111.4 2 0
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:111.9,114.4 2 0
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:117.2,120.42 1 1
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:125.50,127.12 2 0
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:127.12,130.3 2 0
+github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money/money.go:131.2,131.12 1 0
