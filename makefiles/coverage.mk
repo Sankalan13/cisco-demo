@@ -47,16 +47,7 @@ coverage-summary: ## Display test and coverage summary
 	fi
 	@echo ""
 	@echo "========================================"
-	@echo "Golang Coverage Summary:"
-	@echo "========================================"
-	@if [ -f "$(REPORTS_DIR)/go-coverage-summary.txt" ]; then \
-		cat "$(REPORTS_DIR)/go-coverage-summary.txt"; \
-	else \
-		echo "Go coverage not available"; \
-	fi
-	@echo ""
-	@echo "========================================"
-	@echo "Coverage Metrics"
+	@echo "API Coverage Metrics"
 	@echo "========================================"
 	@if [ -f "$(REPORTS_DIR)/coverage.json" ]; then \
 		python3 -c "import json; \
@@ -71,6 +62,15 @@ coverage-summary: ## Display test and coverage summary
 	else \
 		echo "  Coverage metrics not available"; \
 	fi
+	@echo "========================================"
+	@echo "Golang Coverage Summary:"
+	@echo "========================================"
+	@if [ -f "$(REPORTS_DIR)/go-coverage-summary.txt" ]; then \
+		cat "$(REPORTS_DIR)/go-coverage-summary.txt"; \
+	else \
+		echo "Go coverage not available"; \
+	fi
+	@echo ""
 	@echo ""
 	@echo "========================================"
 	@echo "Reports"

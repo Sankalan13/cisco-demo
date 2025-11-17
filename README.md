@@ -1,78 +1,178 @@
 # System Tests for Google Microservices Demo
 
-## Changes made to the source code
+This repository is responsible for running end to end system tests on the google microservices demo repository on fix version v0.10.3 as main repo is broken. The test strategy involves testing user life cycle workflows via gRPC calls to the backend services and using OpenTelemetry and Jager to capture trace coverage of the tests. We also generate golang services coverage report using the golang coverprofile directly from running containers. 
 
-Here are some changes made to the source code to support coverage generation and some constraints yet to be addressed:
+# Documentation Index
 
-- Line coverage was only generated from golang services, first attempt was to add instrumentation to all services which failed
-- Changes were made to the golang services to use a shared mod that can generate live coverage using a SIGUSR1 command without exiting or restarting the golang servers
-- The dockerfiles for golang services were edited to support coverage profiling while the server is running, a total of 3 golang services were edited
-- OpenCensus was available on the microservices apart from cart service, OpenTelemetry Collector was added to track system traces and generate behavioural coverage for the overall system. This coverage report shows us total number of API paths and services covered in the stack.
-- Changes were made to the node services to fix a bug in trace generation, total 2 services were edited
-- Cart Service was restarting duing tests because of low resource allocation, resource allocation was increased in the Kustomize manifests
-- OpenTelemetryCollector and Jager were added to the service stack as observability to collect system wide traces and generate behavioural coverage
-- Existing unit tests for each services was executed and the coverage reports can be found in the source folder
+This file contains all documentation for the microservices-demo testing framework.
 
-## Running the framework
+## Quick Links
 
-NOTE: The below installation instructions are tested for macOS v15.6.1. In case of Linux, please install the same tools in your system before running the tests. The setup has also been tested in Ubuntu Server 24.04.2 LTS.
-Ensure you have the following tools installed in your system:
+### Getting Started
+- [Main README](../README.md) - Project overview and quick start guide
+- [Project Structure](PROJECT_STRUCTURE.md) - Directory layout and organization
+- [Test Framework Guide](TEST_FRAMEWORK.md) - Complete test framework documentation
+- [Makefile Reference](MAKEFILE_REFERENCE.md) - All available Make targets and workflows
 
-- Install Homebrew if not available:
-  
-  ```/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"```
-- Install pyenv to manage python versions, if you already have version 3.12.11 or an alternate tool to switch versions, skip ahead:
+### Service Documentation
+- [Microservices Demo](MICROSERVICES_DEMO.md) - Original Google Cloud microservices demo documentation
 
-  ```brew install pyenv```
-- Ensure pyenv is added to your PATH, for zsh users:
+### Advanced Topics
+- [Go Coverage Guide](GO_COVERAGE_GUIDE.md) - Code-level coverage collection for Go services
+- [Tracing and Observability](TRACING_AND_OBSERVABILITY.md) - OpenTelemetry and Jaeger setup
+- [Kubernetes Test Deployment](K8S_TEST_DEPLOYMENT.md) - Running tests as Kubernetes Jobs
 
-  ```echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.zprofile```
-  
-  ```echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.zprofile```
-  
-  ```echo 'eval "$(pyenv init -)"' >> ~/.zprofile```
+## Documentation Overview
 
-  ```source ~/.zprofile```
-- Install python dependencies if needed:
+### Project Structure
+Complete directory layout and organization guide including:
+- Documentation consolidation rationale
+- Script organization by purpose
+- Backward compatibility approach
+- Migration notes and quick reference
 
-  ```brew install openssl readline sqlite3 xz zlib```
-- Install the python version for the project (dictated via test-framework/.python-version file, to use a different version, update the content of this file after installation is complete):
+### Test Framework Guide
+Comprehensive guide for the BDD test framework including:
+- Architecture and project structure
+- Writing and running tests
+- gRPC client usage
+- Health checks and test lifecycle
+- Coverage reporting (trace-based and code-level)
 
-  ```pyenv install 3.12.11```
+### Makefile Reference
+Complete reference for all Make targets:
+- Complete workflows (`all`, `quick`, `full-ci`)
+- Building and deploying services
+- Test execution modes (local and K8s)
+- Coverage collection and reporting
+- Cleanup operations
 
-  This should install the required python version in your system and switch to that version automatically. To verify if you are using the correct version, run:
+### Go Coverage Guide
+In-depth guide for Go code coverage:
+- How Go coverage instrumentation works
+- Collecting coverage from running services
+- Generating HTML and text reports
+- Understanding coverage metrics
 
-  ```python -V```
+### Tracing and Observability
+OpenTelemetry and Jaeger setup:
+- Deploying the observability stack
+- Configuring distributed tracing
+- Using Jaeger UI for trace analysis
+- Trace-based coverage extraction
 
-  If you see 3.12.11 as output, move ahead, else run:
+### Kubernetes Test Deployment
+Running tests in Kubernetes:
+- Test runner Job configuration
+- RBAC and permissions
+- PersistentVolume for reports
+- Retrieving test results
 
-  ```pyenv local 3.12.11```
-  
-  You should now have the correct version set, you can verify with the aforementioned command.
-- Install Docker for Desktop from the official website if not already available:
+## Directory Structure
 
-  ```https://docs.docker.com/desktop/setup/install/mac-install/```
+```
+docs/
+├── README.md                      # This file
+├── PROJECT_STRUCTURE.md           # Directory layout and organization
+├── TEST_FRAMEWORK.md              # Main test framework guide
+├── MAKEFILE_REFERENCE.md          # Make targets reference
+├── GO_COVERAGE_GUIDE.md           # Go coverage documentation
+├── TRACING_AND_OBSERVABILITY.md   # OpenTelemetry/Jaeger guide
+├── K8S_TEST_DEPLOYMENT.md         # Kubernetes testing guide
+└── MICROSERVICES_DEMO.md          # Original demo documentation
+```
 
-  The office google images for the services are not publicly available in docker registry (```us-central1-docker.pkg.dev/google-samples/microservices-demo/adservice:v0.10.3```) so ensure that you login to docker by running the below command and following the instructions to authenticate. This is a constraint on how docker images are saved by google.
+## Project Structure
 
-  ```docker login```
-- Install kubectl
+```
+cisco-demo/
+├── README.md                      # Main project README
+├── Makefile                       # Main orchestration file
+├── docs/                          # All documentation (you are here)
+├── scripts/                       # All scripts organized by purpose
+│   ├── deployment/                # Kubernetes deployment scripts
+│   │   ├── deploy_test_runner.sh
+│   │   ├── deploy_tracing_stack.sh
+│   │   ├── get_test_reports.sh
+│   │   └── *.yaml                 # K8s manifests
+│   ├── test-framework/            # Test framework scripts
+│   │   ├── entrypoint.sh         # Container entrypoint
+│   │   ├── generate_protos.sh    # Proto code generation
+│   │   └── run_local_tests.sh    # Local test runner
+│   ├── collect-coverage.sh        # Go coverage collection
+│   └── port-forward.sh            # Service port-forwarding
+├── test-framework/                # BDD test framework
+│   ├── config/                    # Service configurations
+│   ├── features/                  # Behave test scenarios
+│   ├── utils/                     # gRPC clients and utilities
+│   ├── generated/                 # Generated protobuf code
+│   ├── reports/                   # Test and coverage reports
+│   ├── Dockerfile                 # Test container image
+│   ├── behave.ini                 # Behave configuration
+│   ├── requirements.txt           # Python dependencies
+│   └── generate_coverage.py       # Coverage report generator
+├── microservices-demo/            # Google Cloud microservices demo
+│   ├── src/                       # Service source code
+│   └── protos/                    # Protocol buffer definitions
+└── makefiles/                     # Modular Makefile components
+    ├── cluster.mk                 # Cluster management
+    ├── deploy.mk                  # Service deployment
+    ├── test.mk                    # Test execution
+    ├── coverage.mk                # Coverage collection
+    └── ...
+```
 
-  ```https://kubernetes.io/docs/tasks/tools/install-kubectl-macos/```
-- Install kind
+## Common Workflows
 
-  ```brew install kind```
-- Verify if netcat is installed in your mac by running:
+### Quick Start
+```bash
+# Check if you have all prerequisites
+make check-prereqs
 
-  ```nc -h```
+# Install prerequisites if not available 
+make install-prereqs
 
-  If it is not installed, install it using homebrew:
+# Run the entire workflow, deploy services, deploy tests, collect coverage
+make e2e-tests
+```
 
-  ```brew install netcat```
+### Test Execution
+```bash
+# Run tests locally
+make test-local
 
-- Once everything is installed, you should be able to run the tests from the root directory using the below command:
+# Run tests in Kubernetes
+make test-k8s
 
-  ```make full-ci```
+# View coverage summary
+make coverage-summary
+```
+
+### Coverage Collection
+```bash
+# Collect all coverage (trace + Go)
+make coverage
+
+# Generate trace-based coverage only
+make generate-trace-coverage
+
+# Collect Go code coverage only
+make collect-go-coverage
+```
+
+### Cluster Management
+```bash
+# Create cluster and deploy services
+make cluster-create deploy
+
+# Check cluster status
+make cluster-status
+
+# Delete cluster
+make cluster-delete
+```
+
+## Orchestration steps
 
   This command does the following:
   - Builds custom service images locally
@@ -90,35 +190,18 @@ Ensure you have the following tools installed in your system:
   - Runs tests
   - Generates coverage metrics
 
-## Quick Start Commands
+## Changes made to the source code
 
-```bash
-# Full workflow (build, deploy, test, coverage)
-make all
+Here are some changes made to the source code to support coverage generation and some constraints yet to be addressed:
 
-# Fast iteration (skip builds if cached)
-make quick
-
-# Show all available commands
-make help
-
-# Build only
-make build
-
-# Deploy only
-make deploy
-
-# Run tests only
-make test
-
-# Generate coverage
-make coverage
-
-# Clean up everything
-make clean-all
-```
-
-For detailed command reference, see [docs/MAKEFILE_REFERENCE.md](docs/MAKEFILE_REFERENCE.md).
+- Line coverage was only generated from golang services, first attempt was to add instrumentation to all services which failed
+- Changes were made to the golang services to use a shared mod that can generate live coverage using a SIGUSR1 command without exiting or restarting the golang servers
+- The dockerfiles for golang services were edited to support coverage profiling while the server is running, a total of 3 golang services were edited
+- OpenCensus was available on the microservices apart from cart service, OpenTelemetry Collector was added to track system traces and generate behavioural coverage for the overall system. This coverage report shows us total number of API paths and services covered in the stack.
+- Changes were made to the node services to fix a bug in trace generation, total 2 services were edited
+- Cart Service was restarting duing tests because of low resource allocation, resource allocation was increased in the Kustomize manifests
+- OpenTelemetryCollector and Jager were added to the service stack as observability to collect system wide traces and generate behavioural coverage
+- Existing unit tests for each services was executed and the coverage reports can be found in the source folder
 
 ## Documentation
 
@@ -132,32 +215,12 @@ Comprehensive documentation is available in the [docs/](docs/) directory:
 - **[K8s Test Deployment](docs/K8S_TEST_DEPLOYMENT.md)** - Running tests in Kubernetes
 - **[Microservices Demo](docs/MICROSERVICES_DEMO.md)** - Original Google Cloud demo docs
 
-## Artifacts Generated
-
-Test Reports: ```test-framework/reports/*.xml (JUnit format)```
-Trace Coverage: ```test-framework/reports/coverage.json```
-Go Coverage: ```test-framework/reports/go-coverage-*.html```
-Test Timing: ```test-framework/reports/test_execution_time.json```
-
 ## Observability Access
 
 Jaeger UI: ```http://localhost:16686```
 Service Endpoints: Various localhost ports (3550, 7070, etc.)
 
-## Other Constraints
-
-- Due to lack of a paid LLM subscription, it was difficult working with free available versions. A monthly subscription for Claude was purchased for $23.60.
-- Claude Pro Plan includes a 5 hour session time lock with model usage constraints that made development slow and inconsistent
-
-## What I learnt
-
-- Good LLM support agents are expensive
-- Instrumenting a dotnet service is not as easy as its put out to be
-- Makefile is great at a lot of things over shell script but shell is still great at fine grain user control to the workflow
-
 ## Further improvements
-
-Provided with the $100 Claude Max subscription, further improvements would have been made to the current framework. The pro version model usage cap was reached within 3 days of development work and buying the Max subscription was not possible. Maxed out all my free usage on tools like Cursor and Windsurf for multiple accounts. The project was built from Friday to Sunday. With the initial plan to submit the assignment on Wednesday, I would have changed:
 
 - Add helm chart deployments and helmfile with test job as helm test hook using helmfile, currently using Kustomize for deployments
 - Added unit tests and collected unit tests coverage since not all services has unit tests
@@ -165,4 +228,19 @@ Provided with the $100 Claude Max subscription, further improvements would have 
 - Added UI tests for critical priority happy case user lifecycle flows
 - Improved test data management
 - Improved line coverage for golang services
-  
+
+## Getting Help
+
+- **Makefile targets**: Run `make help` to see all available targets
+- **Test framework**: See [TEST_FRAMEWORK.md](TEST_FRAMEWORK.md)
+- **Coverage issues**: See [GO_COVERAGE_GUIDE.md](GO_COVERAGE_GUIDE.md)
+- **Tracing setup**: See [TRACING_AND_OBSERVABILITY.md](TRACING_AND_OBSERVABILITY.md)
+
+## Contributing
+
+When adding new documentation:
+1. Place all documentation files in the `docs/` directory
+2. Update this index with a link to your new document
+3. Use clear, descriptive filenames (e.g., `FEATURE_NAME.md`)
+4. Follow the existing documentation structure and style
+5. Update the main README.md if adding significant new features

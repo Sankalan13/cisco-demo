@@ -39,3 +39,14 @@ I had a good time working on this. Here are a few things that can be done better
 
 - Ensuring that the candidates have paid LLM access before handing the assignment would be very helpful for future candidates. If the candidates do not have access, assigning a temporary license to the candidate would level out the field for all candidates and also allow the company to control which LLM agent is used. Completing a requirement of this scale using only free LLM services is not a valid expectation. 
 - Mentioning in the test assignment if the cadidate is allowed to edit the source code to meet their needs is also an important thing missing in the assignment. I tried my best to keep the changes to the minimum but was very hesitant since a lot of places might not be expecting you to edit the source code. 
+
+## Other Constraints
+
+- Due to lack of a paid LLM subscription, it was difficult working with free available versions. A monthly subscription for Claude was purchased for $23.60.
+- Claude Pro Plan includes a 5 hour session time lock with model usage constraints that made development slow and inconsistent
+
+## What I learnt
+
+- Good LLM support agents are expensive
+- Instrumenting a dotnet service is not as easy as its put out to be
+- Makefile is great at a lot of things over shell script but shell is still great at fine grain user control to the workflow

@@ -28,6 +28,7 @@ include makefiles/test.mk
 include makefiles/coverage.mk
 include makefiles/proto.mk
 include makefiles/port-forward.mk
+-include makefiles/prerequisites.mk
 
 ##@ General
 
@@ -48,7 +49,7 @@ help: ## Display this help
 
 ##@ Complete Workflows
 
-all: build deploy test-local coverage ## Full workflow: build → deploy → test → coverage (local mode)
+test-local: build deploy test-local coverage ## Full workflow: build → deploy → test → coverage (local mode)
 	@echo ""
 	@echo "========================================"
 	@echo "✓ Complete workflow finished!"
@@ -58,7 +59,7 @@ quick: cluster deploy test-local ## Quick iteration (reuse builds, fast deploy)
 	@echo ""
 	@echo "✓ Quick workflow complete"
 
-full-ci: clean cluster-create build deploy test-k8s coverage-summary ## Full CI workflow (K8s test mode)
+e2e-tests: clean cluster-create build deploy test-k8s coverage-summary ## Full CI workflow (K8s test mode)
 	@echo ""
 	@echo "========================================"
 	@echo "✓ CI workflow complete"
