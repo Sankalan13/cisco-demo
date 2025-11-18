@@ -2,7 +2,12 @@
 
 This repository is responsible for running end to end system tests on the google microservices demo repository on fix version v0.10.3 as main repo is broken. The test strategy involves testing user life cycle workflows via gRPC calls to the backend services and using OpenTelemetry and Jager to capture trace coverage of the tests. We also generate golang services coverage report using the golang coverprofile directly from running containers. 
 
-[![Watch the video](https://img.youtube.com/vi/9NGlalPd1FQ/0.jpg)](https://youtu.be/9NGlalPd1FQ)
+<div align="center">
+  <a href="https://youtu.be/9NGlalPd1FQ">
+    <img src="https://img.youtube.com/vi/9NGlalPd1FQ/0.jpg" alt="Watch the video">
+  </a>
+  <p><em>Click the image above to watch the demo test run video</em></p>
+</div>
 
 # Documentation Index
 
@@ -11,18 +16,67 @@ This file contains all documentation for the microservices-demo testing framewor
 ## Quick Links
 
 ### Getting Started
-- [Main README](../README.md) - Project overview and quick start guide
-- [Project Structure](PROJECT_STRUCTURE.md) - Directory layout and organization
-- [Test Framework Guide](TEST_FRAMEWORK.md) - Complete test framework documentation
-- [Makefile Reference](MAKEFILE_REFERENCE.md) - All available Make targets and workflows
+- [Project Structure](./docs/PROJECT_STRUCTURE.md) - Directory layout and organization
+- [Test Framework Guide](./docs/TEST_FRAMEWORK.md) - Complete test framework documentation
+- [Makefile Reference](./docs/MAKEFILE_REFERENCE.md) - All available Make targets and workflows
 
 ### Service Documentation
-- [Microservices Demo](MICROSERVICES_DEMO.md) - Original Google Cloud microservices demo documentation
+- [Microservices Demo](./docs/MICROSERVICES_DEMO.md) - Original Google Cloud microservices demo documentation
 
 ### Advanced Topics
-- [Go Coverage Guide](GO_COVERAGE_GUIDE.md) - Code-level coverage collection for Go services
-- [Tracing and Observability](TRACING_AND_OBSERVABILITY.md) - OpenTelemetry and Jaeger setup
-- [Kubernetes Test Deployment](K8S_TEST_DEPLOYMENT.md) - Running tests as Kubernetes Jobs
+- [Go Coverage Guide](./docs/GO_COVERAGE_GUIDE.md) - Code-level coverage collection for Go services
+- [Tracing and Observability](./docs/TRACING_AND_OBSERVABILITY.md) - OpenTelemetry and Jaeger setup
+- [Kubernetes Test Deployment](./docs/K8S_TEST_DEPLOYMENT.md) - Running tests as Kubernetes Jobs
+
+## Common Workflows
+
+### Quick Start
+```bash
+# Check if you have all prerequisites
+make check-prereqs
+
+# Install prerequisites if not available 
+make install-prereqs
+
+# Run the entire workflow, deploy services, deploy tests, collect coverage
+make e2e-tests
+```
+
+### Test Execution
+```bash
+# Run tests locally
+make test-local
+
+# Run tests in Kubernetes
+make test-k8s
+
+# View coverage summary
+make coverage-summary
+```
+
+### Coverage Collection
+```bash
+# Collect all coverage (trace + Go)
+make coverage
+
+# Generate trace-based coverage only
+make generate-trace-coverage
+
+# Collect Go code coverage only
+make collect-go-coverage
+```
+
+### Cluster Management
+```bash
+# Create cluster and deploy services
+make cluster-create deploy
+
+# Check cluster status
+make cluster-status
+
+# Delete cluster
+make cluster-delete
+```
 
 ## Documentation Overview
 
@@ -122,56 +176,6 @@ cisco-demo/
     ├── test.mk                    # Test execution
     ├── coverage.mk                # Coverage collection
     └── ...
-```
-
-## Common Workflows
-
-### Quick Start
-```bash
-# Check if you have all prerequisites
-make check-prereqs
-
-# Install prerequisites if not available 
-make install-prereqs
-
-# Run the entire workflow, deploy services, deploy tests, collect coverage
-make e2e-tests
-```
-
-### Test Execution
-```bash
-# Run tests locally
-make test-local
-
-# Run tests in Kubernetes
-make test-k8s
-
-# View coverage summary
-make coverage-summary
-```
-
-### Coverage Collection
-```bash
-# Collect all coverage (trace + Go)
-make coverage
-
-# Generate trace-based coverage only
-make generate-trace-coverage
-
-# Collect Go code coverage only
-make collect-go-coverage
-```
-
-### Cluster Management
-```bash
-# Create cluster and deploy services
-make cluster-create deploy
-
-# Check cluster status
-make cluster-status
-
-# Delete cluster
-make cluster-delete
 ```
 
 ## Orchestration steps
